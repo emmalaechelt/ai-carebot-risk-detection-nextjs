@@ -1,4 +1,6 @@
 "use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface MonitoringItem {
@@ -12,12 +14,40 @@ interface MonitoringItem {
 }
 
 export default function Page() {
-  const monitoringData: MonitoringItem[] = [
-    { id: 1, name: "김신선", gender: "여", age: 79, location: "중구 문창동", lastSeen: "1분 전", riskLevel: "긴급" },
-    { id: 2, name: "이철수", gender: "남", age: 82, location: "동구 판암동", lastSeen: "5분 전", riskLevel: "위험" },
-    { id: 3, name: "박영희", gender: "여", age: 76, location: "서구 탄방동", lastSeen: "10분 전", riskLevel: "주의" },
-    { id: 4, name: "최민수", gender: "남", age: 80, location: "유성구 봉명동", lastSeen: "2분 전", riskLevel: "안전" },
-  ];
+  const router = useRouter();
+  const [monitoringData, setMonitoringData] = useState<MonitoringItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 로그인 여부 + API 호출
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwtToken");
+
+    if (!token) {
+      alert("로그인이 필요합니다!");
+      router.push("/");
+      return;
+    }
+
+    // 보호된 API 요청
+    fetch("http://localhost:8080/api/dashboard", {
+      headers: {
+        Authorization: token, // 백엔드에서 Bearer 요구 시 → `Bearer ${token}`
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("API 요청 실패");
+        return res.json();
+      })
+      .then((data: MonitoringItem[]) => {
+        setMonitoringData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("데이터를 불러오는 데 실패했습니다.");
+        setLoading(false);
+      });
+  }, [router]);
 
   const riskColorMap: { [key in MonitoringItem["riskLevel"]]: string } = {
     긴급: "text-red-600",
@@ -33,10 +63,14 @@ export default function Page() {
     안전: "✅",
   };
 
+  if (loading) {
+    return <p className="text-center mt-10 text-gray-600">데이터 불러오는 중...</p>;
+  }
+
   return (
     <>
       {/* 위험도 현황 카드 */}
-      <div className="border rounded-lg p-4 bg-white">
+      <div className="border rounded-lg p-4 bg-white mb-6">
         <h2 className="text-lg font-bold mb-4 text-center text-black">위험도별 현황</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
           <div>
@@ -59,15 +93,21 @@ export default function Page() {
         <h2 className="text-lg font-bold text-black mb-4">위험도 모니터링</h2>
         <div className="text-black space-y-3 ">
           {monitoringData.map((item, index) => (
-            <div key={index} className="flex items-center justify-between bg-yellow-50 p-3 rounded-lg">
+            <div
+              key={index}
+              className="flex items-center justify-between bg-yellow-50 p-3 rounded-lg"
+            >
               <div className="flex items-center space-x-2">
                 <span>👤</span>
                 <div>
                   <div>
-                    <Link href={`/users/view/${item.id}`} // id 기반 동적 라우트
-                  className="text-blue-600 hover:underline">
-                    </Link>
-                    {item.name} ({item.gender} / {item.age}세)
+                    <Link
+                      href={`/users/view/${item.id}`} // id 기반 동적 라우트
+                      className="text-blue-600 hover:underline"
+                    >
+                      {item.name}
+                    </Link>{" "}
+                    ({item.gender} / {item.age}세)
                   </div>
                   <div className="text-sm text-gray-500 flex items-center space-x-2">
                     <span>📍 {item.location}</span>
