@@ -1,7 +1,6 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface MonitoringItem {
   id: number;
@@ -13,118 +12,85 @@ interface MonitoringItem {
   riskLevel: "긴급" | "위험" | "주의" | "안전";
 }
 
-export default function Page() {
-  const router = useRouter();
-  const [monitoringData, setMonitoringData] = useState<MonitoringItem[]>([]);
+export default function Dashboard() {
+  const [data, setData] = useState<MonitoringItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 로그인 여부 + API 호출
   useEffect(() => {
     const token = sessionStorage.getItem("jwtToken");
+    if (!token) return;
 
-    if (!token) {
-      alert("로그인이 필요합니다!");
-      router.push("/");
-      return;
-    }
+    // 서버 없이 더미 데이터 생성
+    const dummyData: MonitoringItem[] = Array.from({ length: 20 }).map((_, i) => ({
+      id: i + 1,
+      name: `이용자 ${i + 1}`,
+      gender: i % 2 === 0 ? "남" : "여",
+      age: 65 + (i % 20),
+      location: ["대덕구", "동구", "서구", "유성구", "중구"][i % 5],
+      lastSeen: `2025-01-0${(i % 9) + 1} 12:${(i % 60).toString().padStart(2, "0")}`,
+      riskLevel: ["긴급", "위험", "주의", "안전"][i % 4] as MonitoringItem["riskLevel"],
+    }));
 
-    // 보호된 API 요청
-    fetch("http://localhost:8080/api/dashboard", {
-      headers: {
-        Authorization: token, // 백엔드에서 Bearer 요구 시 → `Bearer ${token}`
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("API 요청 실패");
-        return res.json();
-      })
-      .then((data: MonitoringItem[]) => {
-        setMonitoringData(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("데이터를 불러오는 데 실패했습니다.");
-        setLoading(false);
-      });
-  }, [router]);
+    setData(dummyData);
+    setLoading(false);
+  }, []);
 
-  const riskColorMap: { [key in MonitoringItem["riskLevel"]]: string } = {
+  const riskColor: { [key in MonitoringItem["riskLevel"]]: string } = {
     긴급: "text-red-600",
     위험: "text-orange-500",
     주의: "text-yellow-500",
     안전: "text-green-600",
   };
 
-  const riskIconMap: { [key in MonitoringItem["riskLevel"]]: string } = {
+  const riskIcon: { [key in MonitoringItem["riskLevel"]]: string } = {
     긴급: "❗",
     위험: "⚠️",
     주의: "⚠",
     안전: "✅",
   };
 
-  if (loading) {
-    return <p className="text-center mt-10 text-gray-600">데이터 불러오는 중...</p>;
-  }
+  if (loading) return <p className="text-center mt-10 text-gray-600">데이터 불러오는 중...</p>;
 
   return (
-    <>
-      {/* 위험도 현황 카드 */}
-      <div className="border rounded-lg p-4 bg-white mb-6">
+    <div className="space-y-6">
+      {/* 위험도별 현황 */}
+      <div className="border rounded-lg p-4 bg-white">
         <h2 className="text-lg font-bold mb-4 text-center text-black">위험도별 현황</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
           <div>
             <div className="text-gray-700">총 이용자 수</div>
-            <div className="text-2xl font-bold">{monitoringData.length}명</div>
+            <div className="text-2xl font-bold">{data.length}명</div>
           </div>
-          {(["긴급", "위험", "주의", "안전"] as MonitoringItem["riskLevel"][]).map((risk) => (
-            <div key={risk} className={riskColorMap[risk]}>
-              <div>{risk}</div>
-              <div className="text-xl font-bold">
-                {monitoringData.filter((item) => item.riskLevel === risk).length}명
-              </div>
+          {(["긴급", "위험", "주의", "안전"] as MonitoringItem["riskLevel"][]).map((r) => (
+            <div key={r} className={riskColor[r]}>
+              <div>{r}</div>
+              <div className="text-xl font-bold">{data.filter((i) => i.riskLevel === r).length}명</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 위험도 모니터링 카드 */}
+      {/* 위험도 모니터링 */}
       <div className="border rounded-lg p-4 bg-white">
-        <h2 className="text-lg font-bold text-black mb-4">위험도 모니터링</h2>
-        <div className="text-black space-y-3 ">
-          {monitoringData.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between bg-yellow-50 p-3 rounded-lg"
-            >
+        <h2 className="text-lg font-bold mb-4 text-black">위험도 모니터링</h2>
+        <div className="space-y-3">
+          {data.map((item) => (
+            <div key={item.id} className="flex items-center justify-between bg-yellow-50 p-3 rounded-lg">
               <div className="flex items-center space-x-2">
                 <span>👤</span>
                 <div>
-                  <div>
-                    <Link
-                      href={`/users/view/${item.id}`} // id 기반 동적 라우트
-                      className="text-blue-600 hover:underline"
-                    >
-                      {item.name}
-                    </Link>{" "}
-                    ({item.gender} / {item.age}세)
-                  </div>
+                  {item.name} ({item.gender}/{item.age}세)
                   <div className="text-sm text-gray-500 flex items-center space-x-2">
                     <span>📍 {item.location}</span>
                     <span>⏱ {item.lastSeen}</span>
                   </div>
                 </div>
               </div>
-              <button className="bg-blue-500 text-white px-2 py-1 rounded text-sm">
-                상세정보
-              </button>
-              <span className={`${riskColorMap[item.riskLevel]} text-xl font-bold`}>
-                {riskIconMap[item.riskLevel]}
-              </span>
+              <span className={`${riskColor[item.riskLevel]} text-xl font-bold`}>{riskIcon[item.riskLevel]}</span>
             </div>
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

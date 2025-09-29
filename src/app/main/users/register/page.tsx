@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Script from "next/script";
 
 export default function UserRegisterPage() {
@@ -29,12 +29,15 @@ export default function UserRegisterPage() {
 
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const addressDetailRef = useRef<HTMLInputElement>(null);
 
+  // 숫자 입력 전용
   const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value.replace(/\D/g, "") }));
   };
 
+  // 전화번호 입력 (자동 하이픈)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length < 4) value = value;
@@ -45,13 +48,17 @@ export default function UserRegisterPage() {
     setForm((prev) => ({ ...prev, phone: value }));
   };
 
+  // 일반 입력
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 생년월일 → 나이 자동 계산
   useEffect(() => {
     const { birthYear, birthMonth, birthDay } = form;
     if (birthYear && birthMonth && birthDay) {
@@ -68,15 +75,17 @@ export default function UserRegisterPage() {
     }
   }, [form.birthYear, form.birthMonth, form.birthDay]);
 
+  // 거주형태 체크박스
   const handleCheckboxChange = (value: string) => {
     setForm((prev) => {
       const newHousing = prev.housing.includes(value)
-        ? prev.housing.filter((item) => item !== value)
+        ? prev.housing.filter((i) => i !== value)
         : [...prev.housing, value];
       return { ...prev, housing: newHousing };
     });
   };
 
+  // 카카오 주소 검색
   const handleZipSearch = () => {
     new (window as any).daum.Postcode({
       oncomplete: (data: any) => {
@@ -85,8 +94,6 @@ export default function UserRegisterPage() {
 
         if (data.userSelectedType === "R") addr = data.roadAddress;
         else addr = data.jibunAddress;
-
-        console.log(data)
 
         if (data.userSelectedType === "R") {
           if (data.bname !== "" && /[동|로|가]$/g.test(data.bname))
@@ -101,10 +108,15 @@ export default function UserRegisterPage() {
           addressZip: data.zonecode,
           addressSearch: addr + extraAddr,
         }));
+
+        setTimeout(() => {
+          addressDetailRef.current?.focus();
+        }, 100);
       },
     }).open();
   };
 
+  // 사진 업로드
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -117,28 +129,34 @@ export default function UserRegisterPage() {
     setPhotoPreview(null);
   };
 
+  // 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        if (Array.isArray(value)) formData.append(key, JSON.stringify(value));
-        else formData.append(key, value);
+        if (Array.isArray(value)) {
+          value.forEach((v) => formData.append(key, v));
+        } else {
+          formData.append(key, value);
+        }
       });
       if (photo) formData.append("photo", photo);
 
-      const res = await fetch("/api/upload", {
+      // 👉 실제 백엔드 API 엔드포인트로 변경하세요
+      const res = await fetch("/api/register", {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) throw new Error("업로드 실패");
-      const data = await res.json();
-      console.log("서버 응답:", data);
-      alert("등록/수정 완료!");
+      if (!res.ok) throw new Error("등록 실패");
+
+      alert("등록 성공!");
+      console.log("서버 응답:", await res.json());
     } catch (err) {
       console.error(err);
-      alert("업로드 중 오류 발생");
+      alert("등록 중 오류 발생");
     }
   };
 
@@ -150,14 +168,14 @@ export default function UserRegisterPage() {
 
   return (
     <>
+      {/* ✅ 카카오 주소검색 스크립트 */}
       <Script
         src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
-        strategy="beforeInteractive"
+        strategy="afterInteractive"
       />
 
       <div className="p-6 bg-white rounded-xl shadow max-w-5xl mx-auto text-black">
         <h1 className="text-2xl font-bold mb-4 text-center">이용자 등록</h1>
-
         <form onSubmit={handleSubmit} className="space-y-6 overflow-x-auto">
           {/* 기본정보 */}
           <div>
@@ -293,7 +311,6 @@ export default function UserRegisterPage() {
                   </td>
                 </tr>
 
-                {/* 주소, 거주형태는 그대로 */}
                 <tr>
                   <th className={thTdClass}>주소</th>
                   <td className={thTdClass} colSpan={4}>
@@ -320,6 +337,7 @@ export default function UserRegisterPage() {
                         placeholder="주소"
                       />
                       <input
+                        ref={addressDetailRef}
                         name="addressDetail"
                         value={form.addressDetail}
                         onChange={handleChange}
@@ -336,7 +354,10 @@ export default function UserRegisterPage() {
                     <div className="flex gap-3 justify-center flex-wrap">
                       {["단독주택", "다세대주택", "오피스텔", "아파트"].map(
                         (type) => (
-                          <label key={type} className="flex items-center gap-2 text-base">
+                          <label
+                            key={type}
+                            className="flex items-center gap-2 text-base"
+                          >
                             <input
                               type="checkbox"
                               checked={form.housing.includes(type)}
@@ -449,6 +470,7 @@ export default function UserRegisterPage() {
             </table>
           </div>
 
+          {/* 저장 버튼 */}
           <div className="flex items-center justify-center mt-4">
             <button
               type="submit"

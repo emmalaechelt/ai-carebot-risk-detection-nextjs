@@ -82,7 +82,7 @@ export default function AnalysisPage() {
 
   const columns = useMemo<ColumnDef<UserData>[]>(
     () => [
-      { accessorKey: "id", header: "순서" },
+      { accessorKey: "id", header: "순번" },
       {
         accessorKey: "name",
         header: "이름",
