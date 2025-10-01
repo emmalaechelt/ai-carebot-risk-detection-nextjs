@@ -1,147 +1,106 @@
+// src/app/main/setting/page.tsx
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useEffect, useState } from 'react';
+import api from '@/lib/api';
+import { Member } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function SettingsPage() {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+export default function SettingPage() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
 
-  // 프로필 이미지 상태
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  // 비밀번호 변경 핸들러
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (newPassword !== confirmPassword) {
-      alert("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
-      return;
-    }
-
-    // TODO: 백엔드 API 호출해서 비밀번호 변경
-    alert("비밀번호가 변경되었습니다.");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  };
-
-  // 프로필 이미지 변경 핸들러
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfileImage(URL.createObjectURL(file)); // 미리보기용
-      setPreviewImage(file.name); // 파일명 저장 (백엔드 업로드 시 활용)
+  const fetchMembers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get<Member[]>('/members');
+      setMembers(response.data);
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+      setError('회원 목록을 불러오는 데 실패했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 프로필 이미지 저장 핸들러
-  const handleImageUpload = () => {
-    if (!profileImage) {
-      alert("업로드할 이미지를 선택하세요.");
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const handleDelete = async (username: string) => {
+    if (username === currentUser?.username) {
+      alert("현재 로그인된 계정은 삭제할 수 없습니다.");
       return;
     }
-    // TODO: 백엔드 API 호출해서 실제 업로드
-    alert("프로필 이미지가 변경되었습니다.");
+
+    if (window.confirm(`'${username}' 회원을 정말 삭제하시겠습니까?`)) {
+      try {
+        await api.delete(`/members/${username}`);
+        alert('회원이 성공적으로 삭제되었습니다.');
+        // 삭제 후 목록을 다시 불러옵니다.
+        fetchMembers();
+      } catch (err) {
+        console.error(`Failed to delete member ${username}:`, err);
+        alert('회원 삭제 중 오류가 발생했습니다.');
+      }
+    }
   };
 
   return (
-    <div className="space-y-3 text-black">
-      {/* 관리자 정보 */}
-      <section className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-        <h2 className="text-xl font-bold mb-4">내 정보</h2>
-        <p className="text-gray-700">
-          👤 관리자 이름 : <span className="font-semibold">홍길동</span>
-        </p>
-        <p className="text-gray-700">
-          📧 이메일 : <span className="font-semibold">admin@example.com</span>
-        </p>
-        <p className="text-gray-700">
-          🗓️ 가입일 : <span className="font-semibold">2025-01-01</span>
-        </p>
-      </section>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-black text-center">설정 - 관리자 계정 관리</h1>
 
-      {/* 프로필 이미지 변경 */}
-      <section className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-        <h2 className="text-xl font-bold mb-4">프로필 이미지 변경</h2>
-        <div className="flex items-center space-x-6">
-          <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
-            {profileImage ? (
-              <img
-                src={profileImage}
-                alt="프로필 미리보기"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                없음
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="block text-sm text-gray-600"
-            />
-            <button
-              onClick={handleImageUpload}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
-            >
-              저장
-            </button>
-          </div>
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left text-gray-500">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3">아이디 (Username)</th>
+                <th scope="col" className="px-6 py-3">권한 (Role)</th>
+                <th scope="col" className="px-6 py-3">계정 상태 (Enabled)</th>
+                <th scope="col" className="px-6 py-3 text-center">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-10">로딩 중...</td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-10 text-red-500">{error}</td>
+                </tr>
+              ) : members.map((member) => (
+                <tr key={member.username} className="bg-white border-b hover:bg-gray-50">
+                  <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                    {member.username}
+                    {member.username === currentUser?.username && <span className="text-xs text-blue-500 ml-2">(나)</span>}
+                  </th>
+                  <td className="px-6 py-4">{member.role}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      member.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {member.enabled ? '활성' : '비활성'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => handleDelete(member.username)}
+                      disabled={member.username === currentUser?.username}
+                      className="font-medium text-red-600 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      삭제
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </section>
-
-      {/* 비밀번호 변경 */}
-      <section className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-        <h2 className="text-xl font-bold mb-4">비밀번호 변경</h2>
-        <form onSubmit={handlePasswordChange} className="space-y-4">
-          <div>
-            <label className="block text-gray-600 mb-1">현재 비밀번호</label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-600 mb-1">새 비밀번호</label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-600 mb-1">비밀번호 확인</label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
-          >
-            비밀번호 변경
-          </button>
-        </form>
-      </section>
+      </div>
     </div>
   );
 }
