@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from "react";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
+// Script 컴포넌트는 더 이상 사용하지 않으므로 import에서 제거해도 됩니다.
+// import Script from "next/script"; 
 import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
 import axios from "axios";
@@ -14,14 +15,13 @@ declare global {
   }
 }
 
-// 유효한 날짜 확인
+// ... (isValidDate, calculateAge 등 다른 함수들은 이전과 동일합니다)
 const isValidDate = (y: number, m: number, d: number): boolean => {
   const date = new Date(y, m - 1, d);
   const today = new Date();
   return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d && date <= today;
 };
 
-// 나이 계산
 const calculateAge = (birthDate: string): number | null => {
   if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
   const birth = new Date(birthDate);
@@ -52,10 +52,55 @@ export default function UserRegisterPage() {
   const addressDetailRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   
-  // ▼▼▼ 1. 스크립트 로딩 상태를 관리할 state 추가 ▼▼▼
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
+  // ▼▼▼ 1. next/script 대신 useEffect를 사용하여 직접 스크립트 로드 ▼▼▼
   useEffect(() => {
+    // 스크립트 URL
+    const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+
+    // 페이지에 이미 스크립트가 로드되었는지 확인 (개발 중 hot reload 시 중복 로드 방지)
+    const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
+    
+    if (existingScript) {
+      // 이미 로드된 스크립트가 있다면, window.daum 객체가 준비되었을 가능성이 높으므로 상태를 true로 설정
+      // 만약을 위해 잠시 후 체크
+      setTimeout(() => {
+        if (window.daum && window.daum.Postcode) {
+          setIsScriptLoaded(true);
+        }
+      }, 100);
+      return;
+    }
+    
+    const script = document.createElement("script");
+    script.src = scriptUrl;
+    script.async = true; // 비동기 로드
+    
+    // 스크립트 로드 성공 시
+    script.onload = () => {
+      setIsScriptLoaded(true);
+    };
+    
+    // 스크립트 로드 실패 시 (디버깅용)
+    script.onerror = () => {
+      console.error("Daum 우편번호 스크립트를 로드하는데 실패했습니다.");
+    };
+
+    // 생성한 스크립트를 문서의 head에 추가
+    document.head.appendChild(script);
+
+    // 컴포넌트 언마운트 시 스크립트 제거 (선택적이지만 좋은 습관)
+    return () => {
+      const a_script = document.querySelector(`script[src="${scriptUrl}"]`);
+      if(a_script) {
+        document.head.removeChild(a_script);
+      }
+    };
+  }, []); // 이 useEffect는 컴포넌트가 처음 마운트될 때 한 번만 실행됩니다.
+
+  useEffect(() => {
+    // ... (생년월일 관련 로직은 이전과 동일)
     const { year, month, day } = birth;
     if (year.length === 4 && month.length > 0 && day.length > 0) {
       const yearNum = parseInt(year, 10), monthNum = parseInt(month, 10), dayNum = parseInt(day, 10);
@@ -71,6 +116,7 @@ export default function UserRegisterPage() {
     }
   }, [birth]);
 
+  // ... (handleChange, handleBirthChange 등 다른 핸들러 함수는 이전과 동일)
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -104,9 +150,9 @@ export default function UserRegisterPage() {
     setForm((prev) => ({ ...prev, [name]: formatted }));
   };
   
-  // ▼▼▼ 3. `isScriptLoaded` state를 확인하도록 수정 ▼▼▼
   const handleZipSearch = () => {
-    if (isScriptLoaded) {
+    // 스크립트가 로드되었고, window.daum 객체가 실제로 존재하는지 한 번 더 확인
+    if (isScriptLoaded && window.daum && window.daum.Postcode) {
       new window.daum.Postcode({
         oncomplete: (data: any) => {
           setForm((prev) => ({ ...prev, zip_code: data.zonecode, address: data.roadAddress }));
@@ -114,7 +160,8 @@ export default function UserRegisterPage() {
         },
       }).open();
     } else {
-      alert("우편번호 검색 서비스가 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+      // 이 메시지가 표시된다면, 여전히 환경적인 문제가 있는 것입니다.
+      alert("우편번호 검색 서비스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -126,6 +173,7 @@ export default function UserRegisterPage() {
   };
 
   const handleSubmit = async (e: FormEvent) => {
+    // ... (handleSubmit 로직은 이전과 동일)
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -176,12 +224,7 @@ export default function UserRegisterPage() {
 
   return (
     <>
-      {/* ▼▼▼ 2. `onLoad` 속성 추가 ▼▼▼ */}
-      <Script 
-        src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" 
-        strategy="beforeInteractive"
-        onLoad={() => setIsScriptLoaded(true)}
-      />
+      {/* next/script 컴포넌트는 여기서 제거되었습니다. */}
       
       <div className="p-5 bg-white rounded-lg shadow-md max-w-5xl mx-auto text-black">
         <h1 className="text-2xl font-bold mb-4 text-center">이용자 등록</h1>
@@ -189,6 +232,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 기본정보</h2>
             <table className={tableClass}>
+              {/* ... (테이블 colgroup 및 다른 부분은 동일) ... */}
               <colgroup><col className="w-34" /><col className="w-28" /><col className="w-45" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
@@ -241,13 +285,22 @@ export default function UserRegisterPage() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
-                        <button type="button" onClick={handleZipSearch} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap">우편번호 검색</button>
+                        {/* ▼▼▼ 2. 버튼 비활성화 로직 및 텍스트 변경 추가 ▼▼▼ */}
+                        <button 
+                          type="button" 
+                          onClick={handleZipSearch} 
+                          disabled={!isScriptLoaded} 
+                          className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap disabled:bg-gray-400 disabled:cursor-wait"
+                        >
+                          {isScriptLoaded ? "우편번호 검색" : "서비스 로딩 중"}
+                        </button>
                         <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
                       </div>
                       <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className={`${inputClass} w-full`} />
                     </div>
                   </td>
                 </tr>
+                {/* ... (이하 나머지 JSX 코드는 동일합니다) ... */}
                 <tr>
                   <th className={thClass}>거주 형태</th>
                   <td className={tdClass} colSpan={3}>
