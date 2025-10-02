@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
-  getPaginationRowModel,
   flexRender,
   ColumnDef,
   PaginationState,

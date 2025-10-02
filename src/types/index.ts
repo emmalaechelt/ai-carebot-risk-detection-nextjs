@@ -35,23 +35,21 @@ export interface Senior {
   id: number;
   doll_id: string;
   name: string;
-  photo_url: string | null;
-  birth_date: string; // "YYYY-MM-DD"
+  birth_date: string;
   sex: SeniorSex;
-  state: SeniorState;
-  residence: string; // 여러 개 선택 가능하므로 string으로 받음
   phone: string;
   address: string;
-  gu: string;
-  dong: string;
-  note?: string;
-  guardian_name: string;
-  guardian_phone: string;
-  relationship: string;
-  guardian_note?: string;
+  address_detail: string; 
+  residence: Residence | ""; 
   diseases?: string;
   medications?: string;
-  disease_note?: string;
+  disease_note?: string; 
+  guardian_name: string;
+  relationship: string;
+  guardian_phone: string;
+  guardian_note?: string;
+  note?: string;
+  photo: string | null;
   recent_overall_results?: {
     id: number;
     label: SeniorState;

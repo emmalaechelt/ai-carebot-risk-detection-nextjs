@@ -2,27 +2,47 @@
 
 import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
-// axios 기본 import는 유지합니다.
 import axios from "axios";
 
-// Daum 우편번호 API를 위한 타입 선언
+// [수정] DaumPostcodeData 타입에 sigungu(구)와 bname(동) 추가
+interface DaumPostcodeData {
+  zonecode: string;
+  roadAddress: string;
+  sigungu: string; // 시/군/구 정보
+  bname: string;   // 법정동/리 이름
+}
+
+interface PostcodeOptions {
+  oncomplete: (data: DaumPostcodeData) => void;
+}
+
+interface PostcodeInstance {
+  open(): void;
+}
+
+interface PostcodeConstructor {
+  new (options: PostcodeOptions): PostcodeInstance;
+}
+
 declare global {
   interface Window {
-    daum: any;
+    daum?: {
+      Postcode: PostcodeConstructor;
+    };
   }
 }
 
-// ... (isValidDate, calculateAge 등 다른 함수들은 이전과 동일합니다)
+// 유틸리티 함수 (변경 없음)
 const isValidDate = (y: number, m: number, d: number): boolean => {
   const date = new Date(y, m - 1, d);
   const today = new Date();
   return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d && date <= today;
 };
-
 const calculateAge = (birthDate: string): number | null => {
-  if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
   const birth = new Date(birthDate);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
@@ -36,14 +56,18 @@ const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "�
 export default function UserRegisterPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // [수정] 1단계: form 상태에 gu와 dong 필드 추가
   const [form, setForm] = useState({
     doll_id: "", name: "", birth_date: "", sex: "" as SeniorSex | "",
     phone: "", zip_code: "", address: "", address_detail: "",
-    residence: "" as Residence | "",
-    status: "정상", diseases: "",
+    gu: "", // [추가] gu 필드
+    dong: "", // [추가] dong 필드
+    residence: "" as Residence | "", status: "정상", diseases: "",
     medications: "", disease_note: "", guardian_name: "", relationship: "",
     guardian_phone: "", guardian_note: "", note: "",
   });
+
   const [birth, setBirth] = useState({ year: "", month: "", day: "" });
   const [age, setAge] = useState<number | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
@@ -52,93 +76,91 @@ export default function UserRegisterPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
+  // Daum 우편번호 스크립트 로드 (변경 없음)
   useEffect(() => {
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
     const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
     if (existingScript) {
-      setTimeout(() => {
-        if (window.daum && window.daum.Postcode) setIsScriptLoaded(true);
-      }, 100);
+      setTimeout(() => { if (window.daum?.Postcode) setIsScriptLoaded(true); }, 100);
       return;
     }
     const script = document.createElement("script");
     script.src = scriptUrl;
     script.async = true;
     script.onload = () => setIsScriptLoaded(true);
-    script.onerror = () => console.error("Daum 우편번호 스크립트를 로드하는데 실패했습니다.");
     document.head.appendChild(script);
-    return () => {
-      const a_script = document.querySelector(`script[src="${scriptUrl}"]`);
-      if (a_script) document.head.removeChild(a_script);
-    };
+    return () => { document.head.querySelector(`script[src="${scriptUrl}"]`)?.remove(); };
   }, []);
 
+  // 생년월일 계산 로직 (변경 없음)
   useEffect(() => {
     const { year, month, day } = birth;
     if (year.length === 4 && month.length > 0 && day.length > 0) {
       const yearNum = parseInt(year, 10), monthNum = parseInt(month, 10), dayNum = parseInt(day, 10);
       if (isValidDate(yearNum, monthNum, dayNum)) {
         const fullDate = `${year}-${String(monthNum).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-        setForm((prev) => ({ ...prev, birth_date: fullDate }));
+        setForm(prev => ({ ...prev, birth_date: fullDate }));
         setAge(calculateAge(fullDate));
       } else {
-        setForm((prev) => ({ ...prev, birth_date: "" })); setAge(null);
+        setForm(prev => ({ ...prev, birth_date: "" })); setAge(null);
       }
     } else {
-      setForm((prev) => ({ ...prev, birth_date: "" })); setAge(null);
+      setForm(prev => ({ ...prev, birth_date: "" })); setAge(null);
     }
   }, [birth]);
 
+  // 핸들러 함수들 (변경 없음)
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
-
   const handleBirthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setBirth((prev) => ({ ...prev, [name]: value.replace(/\D/g, "") }));
+    setBirth(prev => ({ ...prev, [e.target.name]: e.target.value.replace(/\D/g, "") }));
   };
-  
   const handleBirthBlur = (e: FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (!value) return;
-    let numValue = parseInt(value, 10), newValue = value;
+    const numValue = parseInt(value, 10);
+    let newValue = value;
     if (name === "month") {
       if (numValue < 1) newValue = "01"; else if (numValue > 12) newValue = "12";
       else newValue = String(numValue).padStart(2, '0');
-    }
-    if (name === "day") {
+    } else if (name === "day") {
       if (numValue < 1) newValue = "01"; else if (numValue > 31) newValue = "31";
       else newValue = String(numValue).padStart(2, '0');
     }
-    if (newValue !== value) setBirth((prev) => ({ ...prev, [name]: newValue }));
+    if (newValue !== value) setBirth(prev => ({ ...prev, [name]: newValue }));
   };
-
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const formatted = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, (_, p1, p2, p3) => {
       let result = p1; if (p2) result += `-${p2}`; if (p3) result += `-${p3}`; return result;
     }).slice(0, 13);
-    setForm((prev) => ({ ...prev, [name]: formatted }));
+    setForm(prev => ({ ...prev, [name]: formatted }));
   };
-  
+
+  // [수정] 2단계: 우편번호 검색 시 gu와 dong 정보를 함께 저장
   const handleZipSearch = () => {
-    if (isScriptLoaded && window.daum && window.daum.Postcode) {
+    if (isScriptLoaded && window.daum?.Postcode) {
       new window.daum.Postcode({
-        oncomplete: (data: any) => {
-          setForm((prev) => ({ ...prev, zip_code: data.zonecode, address: data.roadAddress }));
+        oncomplete: (data: DaumPostcodeData) => {
+          setForm(prev => ({
+            ...prev,
+            zip_code: data.zonecode,
+            address: data.roadAddress,
+            gu: data.sigungu, // [추가] '구' 정보 저장
+            dong: data.bname,   // [추가] '동' 정보 저장
+          }));
           addressDetailRef.current?.focus();
         },
       }).open();
-    } else {
-      alert("우편번호 검색 서비스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
     }
   };
-
+  
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setPhoto(file);
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
       setPhotoPreview(URL.createObjectURL(file));
     }
   };
@@ -146,84 +168,52 @@ export default function UserRegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    setIsSubmitting(true);
 
-    if (!form.name || !form.birth_date || !form.sex || !form.phone || !form.address || !form.doll_id || !form.guardian_name || !form.guardian_phone || !form.relationship) {
+    const requiredFields = [form.doll_id, form.name, form.birth_date, form.sex, form.phone, form.address, form.guardian_name, form.guardian_phone, form.relationship];
+    if (requiredFields.some(field => !field)) {
       alert("필수 항목(*)을 모두 입력해주세요.");
-      setIsSubmitting(false);
       return;
     }
+    setIsSubmitting(true);
+    
+    // [수정] 3단계: seniorPayload에 gu와 dong 포함
+    const seniorPayload = {
+      doll_id: form.doll_id,
+      name: form.name,
+      birth_date: form.birth_date,
+      sex: form.sex,
+      phone: form.phone,
+      address: `${form.address} ${form.address_detail}`.trim(),
+      gu: form.gu, // [추가]
+      dong: form.dong, // [추가]
+      diseases: form.diseases && form.disease_note
+        ? `${form.diseases} (상세: ${form.disease_note})`
+        : form.diseases,
+      medications: form.medications,
+      guardian_name: form.guardian_name,
+      guardian_phone: form.guardian_phone,
+      relationship: form.relationship,
+      guardian_note: form.guardian_note,
+      note: form.residence
+        ? `[거주형태: ${form.residence}] ${form.note}`
+        : form.note,
+    };
 
     try {
       const formData = new FormData();
-
-      if (photo) {
-        formData.append("photo", photo);
-      }
-
-      const seniorDto = {
-        doll_id: form.doll_id,
-        name: form.name,
-        birth_date: form.birth_date,
-        sex: form.sex,
-        phone: form.phone,
-        zip_code: form.zip_code,
-        address: form.address,
-        address_detail: form.address_detail,
-        residence: form.residence || null,
-        status: form.status,
-        diseases: form.diseases,
-        medications: form.medications,
-        disease_note: form.disease_note,
-        guardian_name: form.guardian_name,
-        relationship: form.relationship,
-        guardian_phone: form.guardian_phone,
-        guardian_note: form.guardian_note,
-        note: form.note,
-      };
-      
-      const jsonBlob = new Blob([JSON.stringify(seniorDto)], {
-        type: "application/json",
-      });
-
-      formData.append("senior", jsonBlob);
-      
-      await api.post("/seniors", formData);
-      
+      console.log(seniorPayload);
+      formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
+      if (photo) formData.append("photo", photo);
+      await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
       alert("이용자 등록에 성공했습니다.");
       router.push("/main/users/view");
-
-    // ▼▼▼▼▼ isAxiosError를 사용하지 않는, 가장 안정적인 오류 처리 방식으로 수정 ▼▼▼▼▼
-    } catch (err: unknown) { // err의 타입을 unknown으로 명시
-      console.error("이용자 등록 실패:", err);
-      
-      let alertMessage = "등록 중 알 수 없는 오류가 발생했습니다.";
-
-      // 1. err가 실제로 객체인지, 그리고 'response' 속성을 가지고 있는지 직접 확인합니다.
-      if (
-        err &&
-        typeof err === 'object' &&
-        'response' in err &&
-        (err as any).response // response 속성이 null이나 undefined가 아닌지 추가 확인
-      ) {
-        // 2. 위 조건이 참이면, err를 response 속성을 가진 객체로 간주하고 안전하게 접근합니다.
-        const responseData = (err as { response: { data?: any } }).response.data;
-        console.error("서버 응답 데이터:", responseData);
-        
-        // 서버가 보낸 에러 메시지가 있다면 사용하고, 없다면 일반 메시지를 사용합니다.
-        if (responseData && responseData.message) {
-          alertMessage = `등록 실패: ${responseData.message}`;
-        } else {
-          alertMessage = "등록 실패: 서버에서 오류가 발생했습니다.";
-        }
-      } else if (err instanceof Error) {
-        // Axios 오류가 아닌 일반적인 자바스크립트 오류일 경우를 처리합니다.
-        alertMessage = `오류 발생: ${err.message}`;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const msg = error.response?.data?.message || "서버에서 오류가 발생했습니다.";
+        alert(`등록 실패: ${msg}`);
+      } else {
+        alert("등록 중 알 수 없는 오류가 발생했습니다.");
       }
-
-      alert(alertMessage);
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
     } finally {
       setIsSubmitting(false);
     }
@@ -234,10 +224,8 @@ export default function UserRegisterPage() {
   const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
   const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
   const tdClass = `border ${tableBorderClass} p-2 align-middle`;
-  
   const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
-  
   const filledInputClass = "bg-blue-50";
 
   return (
@@ -253,8 +241,13 @@ export default function UserRegisterPage() {
                 <tr>
                   <td className={tdClass} rowSpan={5}>
                     <div className="flex flex-col items-center justify-center h-full gap-3">
-                      <div className="w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50">
-                        {photoPreview ? <img src={photoPreview} alt="사진 미리보기" className="w-full h-full object-cover rounded-md" /> : <span className="text-gray-400 text-sm">사진</span>}
+                      {/* [수정] <img>를 <Image> 컴포넌트로 교체 */}
+                      <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
+                        {photoPreview ? (
+                          <Image src={photoPreview} alt="사진 미리보기" layout="fill" objectFit="cover" />
+                        ) : (
+                          <span className="text-gray-400 text-sm">사진</span>
+                        )}
                       </div>
                       <input type="file" accept="image/*" onChange={handlePhotoChange} ref={photoInputRef} className="hidden" />
                       <button type="button" onClick={() => photoInputRef.current?.click()} className="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">사진 첨부</button>
@@ -274,6 +267,7 @@ export default function UserRegisterPage() {
                     </div>
                   </td>
                 </tr>
+                {/* 이하 JSX는 변경 없이 그대로 사용하시면 됩니다. */}
                 <tr>
                   <th className={thClass}>성별{requiredLabel}</th>
                   <td className={tdClass}>
@@ -324,7 +318,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 건강상태</h2>
             <table className={tableClass}>
-              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
+              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>질병</th>
@@ -343,7 +337,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 보호자</h2>
             <table className={tableClass}>
-              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
+              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>이름{requiredLabel}</th>
