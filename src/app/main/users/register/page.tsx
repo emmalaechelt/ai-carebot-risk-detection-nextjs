@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from "react";
 import { useRouter } from "next/navigation";
-// Script 컴포넌트는 더 이상 사용하지 않으므로 import에서 제거해도 됩니다.
-// import Script from "next/script"; 
 import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
+// axios 기본 import는 유지합니다.
 import axios from "axios";
 
 // Daum 우편번호 API를 위한 타입 선언
@@ -51,56 +50,30 @@ export default function UserRegisterPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const addressDetailRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
-  // ▼▼▼ 1. next/script 대신 useEffect를 사용하여 직접 스크립트 로드 ▼▼▼
   useEffect(() => {
-    // 스크립트 URL
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
-
-    // 페이지에 이미 스크립트가 로드되었는지 확인 (개발 중 hot reload 시 중복 로드 방지)
     const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
-    
     if (existingScript) {
-      // 이미 로드된 스크립트가 있다면, window.daum 객체가 준비되었을 가능성이 높으므로 상태를 true로 설정
-      // 만약을 위해 잠시 후 체크
       setTimeout(() => {
-        if (window.daum && window.daum.Postcode) {
-          setIsScriptLoaded(true);
-        }
+        if (window.daum && window.daum.Postcode) setIsScriptLoaded(true);
       }, 100);
       return;
     }
-    
     const script = document.createElement("script");
     script.src = scriptUrl;
-    script.async = true; // 비동기 로드
-    
-    // 스크립트 로드 성공 시
-    script.onload = () => {
-      setIsScriptLoaded(true);
-    };
-    
-    // 스크립트 로드 실패 시 (디버깅용)
-    script.onerror = () => {
-      console.error("Daum 우편번호 스크립트를 로드하는데 실패했습니다.");
-    };
-
-    // 생성한 스크립트를 문서의 head에 추가
+    script.async = true;
+    script.onload = () => setIsScriptLoaded(true);
+    script.onerror = () => console.error("Daum 우편번호 스크립트를 로드하는데 실패했습니다.");
     document.head.appendChild(script);
-
-    // 컴포넌트 언마운트 시 스크립트 제거 (선택적이지만 좋은 습관)
     return () => {
       const a_script = document.querySelector(`script[src="${scriptUrl}"]`);
-      if(a_script) {
-        document.head.removeChild(a_script);
-      }
+      if (a_script) document.head.removeChild(a_script);
     };
-  }, []); // 이 useEffect는 컴포넌트가 처음 마운트될 때 한 번만 실행됩니다.
+  }, []);
 
   useEffect(() => {
-    // ... (생년월일 관련 로직은 이전과 동일)
     const { year, month, day } = birth;
     if (year.length === 4 && month.length > 0 && day.length > 0) {
       const yearNum = parseInt(year, 10), monthNum = parseInt(month, 10), dayNum = parseInt(day, 10);
@@ -116,7 +89,6 @@ export default function UserRegisterPage() {
     }
   }, [birth]);
 
-  // ... (handleChange, handleBirthChange 등 다른 핸들러 함수는 이전과 동일)
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -151,7 +123,6 @@ export default function UserRegisterPage() {
   };
   
   const handleZipSearch = () => {
-    // 스크립트가 로드되었고, window.daum 객체가 실제로 존재하는지 한 번 더 확인
     if (isScriptLoaded && window.daum && window.daum.Postcode) {
       new window.daum.Postcode({
         oncomplete: (data: any) => {
@@ -160,7 +131,6 @@ export default function UserRegisterPage() {
         },
       }).open();
     } else {
-      // 이 메시지가 표시된다면, 여전히 환경적인 문제가 있는 것입니다.
       alert("우편번호 검색 서비스가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
     }
   };
@@ -168,12 +138,12 @@ export default function UserRegisterPage() {
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setPhoto(file); setPhotoPreview(URL.createObjectURL(file));
+      setPhoto(file);
+      setPhotoPreview(URL.createObjectURL(file));
     }
   };
 
   const handleSubmit = async (e: FormEvent) => {
-    // ... (handleSubmit 로직은 이전과 동일)
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -186,26 +156,74 @@ export default function UserRegisterPage() {
 
     try {
       const formData = new FormData();
+
       if (photo) {
         formData.append("photo", photo);
       }
-      Object.entries(form).forEach(([key, value]) => {
-        if (value) { 
-          formData.append(key, value as string);
-        }
+
+      const seniorDto = {
+        doll_id: form.doll_id,
+        name: form.name,
+        birth_date: form.birth_date,
+        sex: form.sex,
+        phone: form.phone,
+        zip_code: form.zip_code,
+        address: form.address,
+        address_detail: form.address_detail,
+        residence: form.residence || null,
+        status: form.status,
+        diseases: form.diseases,
+        medications: form.medications,
+        disease_note: form.disease_note,
+        guardian_name: form.guardian_name,
+        relationship: form.relationship,
+        guardian_phone: form.guardian_phone,
+        guardian_note: form.guardian_note,
+        note: form.note,
+      };
+      
+      const jsonBlob = new Blob([JSON.stringify(seniorDto)], {
+        type: "application/json",
       });
+
+      formData.append("senior", jsonBlob);
       
       await api.post("/seniors", formData);
       
       alert("이용자 등록에 성공했습니다.");
       router.push("/main/users/view");
 
-    } catch (err) {
+    // ▼▼▼▼▼ isAxiosError를 사용하지 않는, 가장 안정적인 오류 처리 방식으로 수정 ▼▼▼▼▼
+    } catch (err: unknown) { // err의 타입을 unknown으로 명시
       console.error("이용자 등록 실패:", err);
-      if (axios.isAxiosError(err) && err.response) {
-        console.error("서버 응답 데이터:", err.response.data);
+      
+      let alertMessage = "등록 중 알 수 없는 오류가 발생했습니다.";
+
+      // 1. err가 실제로 객체인지, 그리고 'response' 속성을 가지고 있는지 직접 확인합니다.
+      if (
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as any).response // response 속성이 null이나 undefined가 아닌지 추가 확인
+      ) {
+        // 2. 위 조건이 참이면, err를 response 속성을 가진 객체로 간주하고 안전하게 접근합니다.
+        const responseData = (err as { response: { data?: any } }).response.data;
+        console.error("서버 응답 데이터:", responseData);
+        
+        // 서버가 보낸 에러 메시지가 있다면 사용하고, 없다면 일반 메시지를 사용합니다.
+        if (responseData && responseData.message) {
+          alertMessage = `등록 실패: ${responseData.message}`;
+        } else {
+          alertMessage = "등록 실패: 서버에서 오류가 발생했습니다.";
+        }
+      } else if (err instanceof Error) {
+        // Axios 오류가 아닌 일반적인 자바스크립트 오류일 경우를 처리합니다.
+        alertMessage = `오류 발생: ${err.message}`;
       }
-      alert("등록 중 오류가 발생했습니다. 개발자 콘솔(F12)의 에러 메시지와 네트워크 요청을 확인해주세요.");
+
+      alert(alertMessage);
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
     } finally {
       setIsSubmitting(false);
     }
@@ -224,15 +242,12 @@ export default function UserRegisterPage() {
 
   return (
     <>
-      {/* next/script 컴포넌트는 여기서 제거되었습니다. */}
-      
       <div className="p-5 bg-white rounded-lg shadow-md max-w-5xl mx-auto text-black">
         <h1 className="text-2xl font-bold mb-4 text-center">이용자 등록</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <section>
             <h2 className={sectionTitleClass}>■ 기본정보</h2>
             <table className={tableClass}>
-              {/* ... (테이블 colgroup 및 다른 부분은 동일) ... */}
               <colgroup><col className="w-34" /><col className="w-28" /><col className="w-45" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
@@ -254,11 +269,7 @@ export default function UserRegisterPage() {
                       <input name="month" value={birth.month} onChange={handleBirthChange} onBlur={handleBirthBlur} className={`${inputClass} w-14 text-center ${birth.month ? filledInputClass : 'bg-white'}`} placeholder="MM" maxLength={2} required /> <span className="mr-2">월</span>
                       <input name="day" value={birth.day} onChange={handleBirthChange} onBlur={handleBirthBlur} className={`${inputClass} w-14 text-center ${birth.day ? filledInputClass : 'bg-white'}`} placeholder="DD" maxLength={2} required /> <span className="mr-2">일</span>
                       <span>(만</span>
-                      <input
-                        readOnly
-                        value={age ?? ""}
-                        className={`${inputClass} w-15 text-center mx-1 ${age !== null ? filledInputClass : 'bg-white'}`}
-                      />
+                      <input readOnly value={age ?? ""} className={`${inputClass} w-15 text-center mx-1 ${age !== null ? filledInputClass : 'bg-white'}`} />
                       <span>세)</span>
                     </div>
                   </td>
@@ -285,13 +296,7 @@ export default function UserRegisterPage() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
-                        {/* ▼▼▼ 2. 버튼 비활성화 로직 및 텍스트 변경 추가 ▼▼▼ */}
-                        <button 
-                          type="button" 
-                          onClick={handleZipSearch} 
-                          disabled={!isScriptLoaded} 
-                          className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap disabled:bg-gray-400 disabled:cursor-wait"
-                        >
+                        <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap disabled:bg-gray-400 disabled:cursor-wait">
                           {isScriptLoaded ? "우편번호 검색" : "서비스 로딩 중"}
                         </button>
                         <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
@@ -300,21 +305,13 @@ export default function UserRegisterPage() {
                     </div>
                   </td>
                 </tr>
-                {/* ... (이하 나머지 JSX 코드는 동일합니다) ... */}
                 <tr>
                   <th className={thClass}>거주 형태</th>
                   <td className={tdClass} colSpan={3}>
                     <div className="flex items-center gap-4 flex-wrap py-1">
                       {Object.values(Residence).map((res) => (
                         <label key={res} className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="residence"
-                            value={res}
-                            checked={form.residence === res}
-                            onChange={handleChange}
-                            className="w-4 h-4"
-                          /> {res}
+                          <input type="radio" name="residence" value={res} checked={form.residence === res} onChange={handleChange} className="w-4 h-4" /> {res}
                         </label>
                       ))}
                     </div>
@@ -327,7 +324,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 건강상태</h2>
             <table className={tableClass}>
-              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /><col className="w-auto" /></colgroup>
+              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>질병</th>
@@ -346,7 +343,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 보호자</h2>
             <table className={tableClass}>
-              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /><col className="w-auto" /></colgroup>
+              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>이름{requiredLabel}</th>
