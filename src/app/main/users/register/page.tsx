@@ -38,7 +38,7 @@ export default function UserRegisterPage() {
     address: "",
     address_detail: "",
     residence: [] as Residence[],
-    status: "정상", // [수정] '현재 상태'를 form state에 포함
+    status: "정상", // '현재 상태'를 form state에 포함
 
     diseases: "",
     medications: "",
@@ -63,7 +63,7 @@ export default function UserRegisterPage() {
     const monthNum = parseInt(birth.month, 10);
     const dayNum = parseInt(birth.day, 10);
 
-    // [수정] 유효한 날짜인지 검사 후 상태 업데이트
+    // 유효한 날짜인지 검사 후 상태 업데이트
     if (isValidDate(yearNum, monthNum, dayNum)) {
       const fullDate = `${birth.year}-${birth.month.padStart(2, "0")}-${birth.day.padStart(2, "0")}`;
       setForm((prev) => ({ ...prev, birth_date: fullDate }));
@@ -149,7 +149,8 @@ export default function UserRegisterPage() {
   const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
   const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
   const tdClass = `border ${tableBorderClass} p-2 align-middle`;
-  const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-sm w-full";
+  // [수정] 문제의 원인이었던 w-full을 여기서 삭제합니다.
+  const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-sm";
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
 
   return (
@@ -163,16 +164,16 @@ export default function UserRegisterPage() {
             <h2 className={sectionTitleClass}>■ 기본정보</h2>
             <table className={tableClass}>
               <colgroup>
-                <col className="w-32" /> {/* 사진 */}
-                <col className="w-28" /> {/* 라벨 1 */}
-                <col className="w-auto" />{/* 입력칸 1 */}
-                <col className="w-32" /> {/* 라벨 2 */}
-                <col className="w-auto" />{/* 입력칸 2 */}
+                <col className="w-34" />
+                <col className="w-28" />
+                <col className="w-45" />
+                <col className="w-35" />
+                <col className="w-auto" />
               </colgroup>
               <tbody>
                 <tr>
                   <td className={tdClass} rowSpan={5}>
-                    <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <div className="flex flex-col items-center justify-center h-full gap-3">
                       <div className="w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50">
                         {photoPreview ? <img src={photoPreview} alt="사진 미리보기" className="w-full h-full object-cover rounded-md" /> : <span className="text-gray-400 text-sm">사진</span>}
                       </div>
@@ -181,43 +182,46 @@ export default function UserRegisterPage() {
                     </div>
                   </td>
                   <th className={thClass}>이름{requiredLabel}</th>
-                  <td className={tdClass}><input name="name" value={form.name} onChange={handleChange} className={inputClass} required /></td>
+                  {/* [수정] 필요한 곳에만 w-full을 개별적으로 추가 */}
+                  <td className={tdClass}><input name="name" value={form.name} onChange={handleChange} className={`${inputClass} w-full`} required /></td>
                   <th className={thClass}>생년월일 (나이){requiredLabel}</th>
                   <td className={tdClass}>
                     <div className="flex items-center gap-1">
-                      <input name="year" value={birth.year} onChange={handleBirthChange} className={`${inputClass} w-20 text-center`} placeholder="YYYY" maxLength={4} required />
-                      <span>년</span>
+                      {/* [수정] 이제 아래 너비 값들이 정상적으로 작동합니다. 원하는 값으로 수정하세요. */}
+                       <input name="year" value={birth.year} onChange={handleBirthChange} className={`${inputClass} w-20 text-center`} placeholder="YYYY" maxLength={4} required />
+                      <span className="mr-2">년</span>
                       <input name="month" value={birth.month} onChange={handleBirthChange} className={`${inputClass} w-14 text-center`} placeholder="MM" maxLength={2} required />
-                      <span>월</span>
+                      <span className="mr-2">월</span>
                       <input name="day" value={birth.day} onChange={handleBirthChange} className={`${inputClass} w-14 text-center`} placeholder="DD" maxLength={2} required />
-                      <span>일 (만</span>
-                      <input readOnly value={age ?? ""} className={`${inputClass} w-12 text-center bg-gray-100 mx-1`} />
+                      <span className="mr-2">일</span>
+                      <span>(만</span>
+                      <input readOnly value={age ?? ""} className={`${inputClass} w-15 text-center bg-gray-100 mx-1`} />
                       <span>세)</span>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <th className={thClass}>성별{requiredLabel}</th>
-                  <td className={tdClass}><select name="sex" value={form.sex} onChange={handleChange} className={inputClass} required><option value="">선택</option><option value="MALE">남</option><option value="FEMALE">여</option></select></td>
+                  <td className={tdClass}><select name="sex" value={form.sex} onChange={handleChange} className={`${inputClass} w-full`} required><option value="">선택</option><option value="MALE">남</option><option value="FEMALE">여</option></select></td>
                   <th className={thClass}>연락처{requiredLabel}</th>
-                  <td className={tdClass}><input name="phone" value={form.phone} onChange={handlePhoneChange} className={inputClass} placeholder="010-1234-5678" required /></td>
+                  <td className={tdClass}><input name="phone" value={form.phone} onChange={handlePhoneChange} className={`${inputClass} w-full`} placeholder="010-1234-5678" required /></td>
                 </tr>
                 <tr>
                   <th className={thClass}>현재 상태</th>
-                  <td className={tdClass}><input value={form.status} readOnly className={`${inputClass} bg-gray-100 text-center`} /></td>
+                  <td className={tdClass}><input value={form.status} readOnly className={`${inputClass} w-full bg-gray-100 text-center`} /></td>
                   <th className={thClass}>인형 아이디</th>
-                  <td className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={inputClass} /></td>
+                  <td className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={`${inputClass} w-full`} /></td>
                 </tr>
                 <tr>
                   <th className={thClass}>주소{requiredLabel}</th>
                   <td className={tdClass} colSpan={3}>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-24 bg-gray-100`} />
-                        <button type="button" onClick={handleZipSearch} className="bg-blue-500 text-white px-4 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap">우편번호 검색</button>
+                        <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
+                        <button type="button" onClick={handleZipSearch} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap">우편번호 검색</button>
                         <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
                       </div>
-                      <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className={inputClass} />
+                      <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className={`${inputClass} w-full`} />
                     </div>
                   </td>
                 </tr>
@@ -233,26 +237,26 @@ export default function UserRegisterPage() {
             </table>
           </section>
 
-          {/* [수정] 아래 표들의 colgroup 구조를 위와 다르게 하여 라인 정렬 */}
           <section>
             <h2 className={sectionTitleClass}>■ 건강상태</h2>
             <table className={tableClass}>
               <colgroup>
-                <col className="w-32" /> {/* 라벨 1 (사진 너비와 동일) */}
-                <col className="w-auto" />{/* 입력칸 1 */}
-                <col className="w-[10.5rem]" /> {/* 라벨 2 (위의 라벨너비+패딩 등) */}
-                <col className="w-auto" />{/* 입력칸 2 */}
+                <col className="w-34" />
+                <col className="w-73" />
+                <col className="w-35" />
+                <col className="w-auto" />
+                <col className="w-auto" />
               </colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>질병</th>
-                  <td className={tdClass}><input name="diseases" value={form.diseases} onChange={handleChange} className={inputClass} /></td>
+                  <td className={tdClass}><input name="diseases" value={form.diseases} onChange={handleChange} className={`${inputClass} w-full`} /></td>
                   <th className={thClass}>복용 약물</th>
-                  <td className={tdClass}><input name="medications" value={form.medications} onChange={handleChange} className={inputClass} /></td>
+                  <td className={tdClass}><input name="medications" value={form.medications} onChange={handleChange} className={`${inputClass} w-full`} /></td>
                 </tr>
                 <tr>
                   <th className={thClass}>상세 증상</th>
-                  <td className={tdClass} colSpan={3}><textarea name="disease_note" value={form.disease_note} onChange={handleChange} rows={3} className={inputClass}></textarea></td>
+                  <td className={tdClass} colSpan={3}><textarea name="disease_note" value={form.disease_note} onChange={handleChange} rows={3} className={`${inputClass} w-full`}></textarea></td>
                 </tr>
               </tbody>
             </table>
@@ -262,28 +266,29 @@ export default function UserRegisterPage() {
             <h2 className={sectionTitleClass}>■ 보호자</h2>
             <table className={tableClass}>
               <colgroup>
-                <col className="w-32" />
+                <col className="w-34" />
+                <col className="w-73" />
+                <col className="w-35" />
                 <col className="w-auto" />
-                <col className="w-[10.5rem]" />
                 <col className="w-auto" />
               </colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>이름</th>
-                  <td className={tdClass}><input name="guardian_name" value={form.guardian_name} onChange={handleChange} className={inputClass} /></td>
+                  <td className={tdClass}><input name="guardian_name" value={form.guardian_name} onChange={handleChange} className={`${inputClass} w-full`} /></td>
                   <th className={thClass}>연락처</th>
-                  <td className={tdClass}><input name="guardian_phone" value={form.guardian_phone} onChange={handlePhoneChange} className={inputClass} placeholder="010-1234-5678" /></td>
+                  <td className={tdClass}><input name="guardian_phone" value={form.guardian_phone} onChange={handlePhoneChange} className={`${inputClass} w-full`} placeholder="010-1234-5678" /></td>
                 </tr>
                 <tr>
                   <th className={thClass}>이용자와의 관계</th>
                   <td className={tdClass}>
-                    <select name="relationship" value={form.relationship} onChange={handleChange} className={inputClass}>
+                    <select name="relationship" value={form.relationship} onChange={handleChange} className={`${inputClass} w-full`}>
                       <option value="">선택</option>
                       {relationshipOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
                     </select>
                   </td>
                   <th className={thClass}>참고사항</th>
-                  <td className={tdClass}><input name="guardian_note" value={form.guardian_note} onChange={handleChange} className={inputClass} /></td>
+                  <td className={tdClass}><input name="guardian_note" value={form.guardian_note} onChange={handleChange} className={`${inputClass} w-full`} /></td>
                 </tr>
               </tbody>
             </table>
@@ -293,13 +298,13 @@ export default function UserRegisterPage() {
             <h2 className={sectionTitleClass}>■ 이외 참고사항</h2>
             <table className={tableClass}>
               <colgroup>
-                <col className="w-32" />
+                <col className="w-34" />
                 <col className="w-auto" />
               </colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>참고사항</th>
-                  <td className={tdClass}><textarea name="note" value={form.note} onChange={handleChange} rows={3} className={inputClass}></textarea></td>
+                  <td className={tdClass}><textarea name="note" value={form.note} onChange={handleChange} rows={3} className={`${inputClass} w-full`}></textarea></td>
                 </tr>
               </tbody>
             </table>
