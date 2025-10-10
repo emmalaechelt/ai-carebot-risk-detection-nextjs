@@ -201,7 +201,6 @@ export default function UserRegisterPage() {
 
     try {
       const formData = new FormData();
-      console.log(seniorPayload);
       formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
       if (photo) formData.append("photo", photo);
       await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });

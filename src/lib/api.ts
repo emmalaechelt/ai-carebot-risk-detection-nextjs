@@ -2,8 +2,11 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8080/api",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   withCredentials: true, // 쿠키(Refresh Token)를 주고받기 위해 필수
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // 요청 인터셉터: 모든 API 요청 헤더에 Access Token을 자동으로 추가
