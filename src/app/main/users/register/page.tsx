@@ -172,15 +172,19 @@ export default function UserRegisterPage() {
     e.preventDefault();
     if (isSubmitting) return;
 
-    // [수정] 필수 필드 검증에 `form.residence` 추가
-    const requiredFields = [form.doll_id, form.name, form.birth_date, form.sex, form.phone, form.address, form.residence, form.guardian_name, form.guardian_phone, form.relationship];
+    // [수정] 1단계: 필수 필드 검증에 `gu`와 `dong`을 추가하여 400 오류 방지
+    const requiredFields = [
+        form.doll_id, form.name, form.birth_date, form.sex, form.phone, 
+        form.address, form.gu, form.dong, // gu, dong 추가
+        form.residence, form.guardian_name, form.guardian_phone, form.relationship
+    ];
     if (requiredFields.some(field => !field)) {
-      alert("필수 항목(*)을 모두 입력해주세요.");
+      alert("필수 항목(*)을 모두 입력해주세요. (주소는 반드시 '우편번호 검색'을 이용해야 합니다)");
       return;
     }
     setIsSubmitting(true);
     
-    // [수정] 제공된 JSON 형식과 100% 일치하도록 seniorPayload 객체 재구성
+    // [수정] 2단계: 제공된 JSON 형식과 100% 일치하도록 seniorPayload 객체 재구성
     const seniorPayload = {
       doll_id: form.doll_id,
       name: form.name,
@@ -196,14 +200,13 @@ export default function UserRegisterPage() {
       guardian_phone: form.guardian_phone,
       relationship: form.relationship,
       guardian_note: form.guardian_note,
-      diseases: form.diseases,         // `diseases`를 독립 필드로 전송
-      medications: form.medications,      // `medications`를 독립 필드로 전송
-      disease_note: form.disease_note,  // `disease_note`를 독립 필드로 전송
+      diseases: form.diseases,
+      medications: form.medications,
+      disease_note: form.disease_note,
     };
 
     try {
       const formData = new FormData();
-      console.log(seniorPayload);
       formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
       if (photo) formData.append("photo", photo);
 

@@ -1,363 +1,29 @@
-// src/app/main/users/view/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Script from "next/script";
+import Image from "next/image";
 import api from "@/lib/api";
-import { Residence, SeniorSex, Senior } from "@/types";
+import { Residence, SeniorSex } from "@/types";
 
-// [추가] API의 위험도(label)를 한글과 색상으로 변환하는 헬퍼 함수
-const getStatusInfo = (label: string | undefined) => {
-  switch (label) {
-    case "EMERGENCY":
-    case "CRITICAL":
-      return { text: "긴급", color: "bg-red-500 text-white" };
-    case "DANGER":
-      return { text: "위험", color: "bg-yellow-400 text-black" };
-    case "POSITIVE":
-      return { text: "안전", color: "bg-green-500 text-white" };
-    default:
-      return { text: "정상", color: "bg-gray-100 text-black" };
-  }
+// DaumPostcodeData 타입 정의
+interface DaumPostcodeData { zonecode: string; roadAddress: string; sigungu: string; bname: string; }
+interface PostcodeOptions { oncomplete: (data: DaumPostcodeData) => void; }
+interface PostcodeInstance { open(): void; }
+interface PostcodeConstructor { new (options: PostcodeOptions): PostcodeInstance; }
+declare global { interface Window { daum?: { Postcode: PostcodeConstructor; }; } }
+
+// 최근 분석 타입
+interface Analysis { id: number; title: string; date: string; result: string; }
+
+// 유틸 함수
+const isValidDate = (y: number, m: number, d: number) => {
+  const date = new Date(y, m - 1, d);
+  const today = new Date();
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d && date <= today;
 };
-
-const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
-
-export default function UserViewPage() {
-  const router = useRouter();
-  const params = useParams();
-  const seniorId = params.id as string;
-
-  const [form, setForm] = useState<Senior | null>(null);
-  const [birth, setBirth] = useState({ year: "", month: "", day: "" });
-  const [age, setAge] = useState<number | null>(null);
-  const [status, setStatus] = useState({ text: "로딩중...", color: "bg-gray-200" });
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const addressDetailRef = useRef<HTMLInputElement>(null);
-
-  // 데이터 로딩 Effect
-  useEffect(() => {
-    if (!seniorId) return;
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // 1. 시니어 정보 조회
-        const seniorRes = await api.get<Senior>(`/seniors/${seniorId}`);
-        const seniorData = seniorRes.data;
-        setForm(seniorData);
-
-        // 생년월일 분리
-        if (seniorData.birth_date) {
-          const [year, month, day] = seniorData.birth_date.split("-");
-          setBirth({ year, month, day });
-          setAge(calculateAge(seniorData.birth_date));
-        }
-        
-        // 2. 분석 결과 조회
-        if(seniorData.doll_id) {
-          const analyzeRes = await api.get<any[]>(`/analyze`);
-          const seniorAnalysis = analyzeRes.data.find(
-            (result) => result.doll_id === seniorData.doll_id
-          );
-          setStatus(getStatusInfo(seniorAnalysis?.label));
-        } else {
-          setStatus(getStatusInfo(undefined));
-        }
-
-      } catch (error) {
-        console.error("데이터 로딩 실패:", error);
-        alert("사용자 정보를 불러오는 데 실패했습니다.");
-        router.push("/main/users/list"); // 목록 페이지로 이동 (가정)
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [seniorId, router]);
-  
-  // 생년월일 변경 시 나이 재계산
-  useEffect(() => {
-    if (birth.year.length === 4 && birth.month && birth.day) {
-        const fullDate = `${birth.year}-${birth.month.padStart(2, "0")}-${birth.day.padStart(2, "0")}`;
-        setAge(calculateAge(fullDate));
-        setForm(prev => prev ? {...prev, birth_date: fullDate} : null);
-    }
-  }, [birth]);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => prev ? { ...prev, [name]: value } : null);
-  };
-  const handleBirthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setBirth(prev => ({ ...prev, [name]: value.replace(/\D/g, "") }));
-  };
-  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const formatted = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, (_, p1, p2, p3) => {
-        let result = p1;
-        if (p2) result += `-${p2}`;
-        if (p3) result += `-${p3}`;
-        return result;
-      }).slice(0, 13);
-    setForm(prev => prev ? { ...prev, [name]: formatted } : null);
-  };
-   const handleResidenceChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { value, checked } = e.target;
-    const residenceValue = value as Residence;
-    setForm((prev) => {
-      if (!prev) return null;
-      const currentResidences = Array.isArray(prev.residence) ? prev.residence : [];
-      const newResidences = checked
-        ? [...currentResidences, residenceValue]
-        : currentResidences.filter((r) => r !== residenceValue);
-      return { ...prev, residence: newResidences };
-    });
-  };
-  const handleZipSearch = () => {
-    new (window as any).daum.Postcode({
-      oncomplete: (data: any) => {
-        setForm(prev => prev ? { ...prev, zip_code: data.zonecode, address: data.roadAddress } : null);
-        addressDetailRef.current?.focus();
-      },
-    }).open();
-  };
-
-  // [수정] handleSubmit -> handleUpdate
-  const handleUpdate = async (e: FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting || !form) return;
-    
-    setIsSubmitting(true);
-    try {
-      // API 명세에 따라 전송할 데이터만 추림 (사진 제외)
-      const updateData = {
-        doll_id: form.doll_id,
-        name: form.name,
-        birth_date: form.birth_date,
-        sex: form.sex,
-        phone: form.phone,
-        address: `${form.address} ${form.address_detail}`,
-        note: form.note,
-        guardian_name: form.guardian_name,
-        guardian_phone: form.guardian_phone,
-        relationship: form.relationship,
-        guardian_note: form.guardian_note,
-        diseases: form.diseases,
-        medications: form.medications,
-      };
-      
-      await api.put(`/seniors/${seniorId}`, updateData);
-      alert("정보가 성공적으로 수정되었습니다.");
-      setIsEditing(false); // 수정 모드 종료
-    } catch (err) {
-      console.error("이용자 수정 실패:", err);
-      alert("수정 중 오류가 발생했습니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // [추가] 삭제 핸들러
-  const handleDelete = async () => {
-    if (window.confirm("정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-        try {
-            await api.delete(`/seniors/${seniorId}`);
-            alert("사용자가 삭제되었습니다.");
-            router.push("/main/users/list"); // 목록 페이지로 이동 (가정)
-        } catch (error) {
-            console.error("삭제 실패:", error);
-            alert("삭제 중 오류가 발생했습니다.");
-        }
-    }
-  };
-
-  if (isLoading || !form) {
-    return <div className="p-6 text-center">로딩 중...</div>;
-  }
-
-  // --- 스타일 ---
-  const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-2";
-  const tableBorderClass = "border-gray-300";
-  const thClass = `border-b lg:border ${tableBorderClass} bg-gray-50 font-medium p-2 text-left lg:text-center align-middle whitespace-nowrap`;
-  const tdClass = `border-b lg:border ${tableBorderClass} p-2 align-middle`;
-  const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-sm w-full disabled:bg-gray-100 disabled:text-gray-500";
-  const requiredLabel = <span className="text-red-500 ml-1">*</span>;
-  const mobileCellWrapperClass = "flex flex-col lg:table-cell";
-
-  return (
-    <>
-      <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="afterInteractive" />
-      <div className="p-4 lg:p-6 bg-white rounded-lg shadow-md max-w-5xl mx-auto text-black">
-        {/* [수정] 제목을 폼 바깥으로 */}
-        <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">이용자 상세 정보</h1>
-            {/* [추가] 수정/삭제 버튼 */}
-            {!isEditing && (
-                 <div className="flex gap-2">
-                    <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">수정</button>
-                    <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">삭제</button>
-                 </div>
-            )}
-        </div>
-        
-        <form onSubmit={handleUpdate} className="space-y-6">
-          <section>
-            <h2 className={sectionTitleClass}>■ 기본정보</h2>
-            <div className={`border ${tableBorderClass} lg:grid lg:grid-cols-[136px_1fr]`}>
-              <div className={`${tdClass} flex justify-center items-center p-4 lg:row-span-5`}>
-                 <div className="w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50">
-                    <span className="text-gray-400 text-sm">사진</span>
-                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                <div className={mobileCellWrapperClass}>
-                  <label className={thClass}>이름{requiredLabel}</label>
-                  <div className={tdClass}><input name="name" value={form.name} onChange={handleChange} className={inputClass} required disabled={!isEditing} /></div>
-                </div>
-                <div className={mobileCellWrapperClass}>
-                  <label className={thClass}>생년월일 (나이){requiredLabel}</label>
-                  <div className={tdClass}>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <input name="year" value={birth.year} onChange={handleBirthChange} className={`${inputClass} !w-20 text-center`} placeholder="YYYY" maxLength={4} required disabled={!isEditing} />
-                      <span>년</span>
-                      <input name="month" value={birth.month} onChange={handleBirthChange} className={`${inputClass} !w-14 text-center`} placeholder="MM" maxLength={2} required disabled={!isEditing} />
-                      <span>월</span>
-                      <input name="day" value={birth.day} onChange={handleBirthChange} className={`${inputClass} !w-14 text-center`} placeholder="DD" maxLength={2} required disabled={!isEditing} />
-                      <span>일</span>
-                      <div className="flex items-center ml-2">(만 
-                        <input readOnly value={age ?? ""} className={`${inputClass} !w-12 text-center bg-gray-100 mx-1`} />
-                      세)</div>
-                    </div>
-                  </div>
-                </div>
-                <div className={mobileCellWrapperClass}>
-                  <label className={thClass}>성별{requiredLabel}</label>
-                  <div className={tdClass}><select name="sex" value={form.sex} onChange={handleChange} className={inputClass} required disabled={!isEditing}><option value="">선택</option><option value="MALE">남</option><option value="FEMALE">여</option></select></div>
-                </div>
-                <div className={mobileCellWrapperClass}>
-                  <label className={thClass}>연락처{requiredLabel}</label>
-                  <div className={tdClass}><input name="phone" value={form.phone} onChange={handlePhoneChange} className={inputClass} placeholder="010-1234-5678" required disabled={!isEditing} /></div>
-                </div>
-                 <div className={mobileCellWrapperClass}>
-                  <label className={thClass}>현재 상태</label>
-                  <div className={tdClass}>
-                    <input value={status.text} readOnly className={`${inputClass} text-center font-bold ${status.color}`} />
-                  </div>
-                </div>
-                <div className={mobileCellWrapperClass}>
-                  <label className={thClass}>인형 아이디</label>
-                  <div className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={inputClass} disabled={!isEditing}/></div>
-                </div>
-                <div className={`${mobileCellWrapperClass} lg:col-span-2`}>
-                  <label className={thClass}>주소{requiredLabel}</label>
-                  <div className={`${tdClass} space-y-2`}>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} !w-24 bg-gray-100`} />
-                      <button type="button" onClick={handleZipSearch} className="bg-blue-500 text-white px-4 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap" disabled={!isEditing}>우편번호 검색</button>
-                      <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow min-w-[200px]`} />
-                    </div>
-                    <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className={inputClass} disabled={!isEditing}/>
-                  </div>
-                </div>
-                <div className={`${mobileCellWrapperClass} lg:col-span-2`}>
-                  <label className={thClass}>거주 형태</label>
-                  <div className={tdClass}>
-                    <div className="flex items-center gap-4 flex-wrap py-1">
-                      {Object.values(Residence).map((res) => (<label key={res} className="flex items-center gap-1.5 cursor-pointer">
-                          <input type="checkbox" value={res} checked={Array.isArray(form.residence) && form.residence.includes(res)} onChange={handleResidenceChange} className="w-4 h-4" disabled={!isEditing}/>
-                          {res}
-                        </label>))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ... 이하 건강상태, 보호자 정보 등도 동일한 패턴으로 disabled={!isEditing}을 적용 ... */}
-          <section>
-            <h2 className={sectionTitleClass}>■ 건강상태</h2>
-            <div className={`grid grid-cols-1 lg:grid-cols-2 border ${tableBorderClass}`}>
-              <div className={mobileCellWrapperClass}>
-                <label className={thClass}>질병</label>
-                <div className={tdClass}><input name="diseases" value={form.diseases} onChange={handleChange} className={inputClass} disabled={!isEditing}/></div>
-              </div>
-              <div className={mobileCellWrapperClass}>
-                <label className={thClass}>복용 약물</label>
-                <div className={tdClass}><input name="medications" value={form.medications} onChange={handleChange} className={inputClass} disabled={!isEditing}/></div>
-              </div>
-              <div className={`${mobileCellWrapperClass} lg:col-span-2`}>
-                <label className={thClass}>상세 증상</label>
-                <div className={tdClass}><textarea name="disease_note" value={form.disease_note} onChange={handleChange} rows={3} className={inputClass} disabled={!isEditing}></textarea></div>
-              </div>
-            </div>
-          </section>
-          
-          <section>
-            <h2 className={sectionTitleClass}>■ 보호자</h2>
-            <div className={`grid grid-cols-1 lg:grid-cols-2 border ${tableBorderClass}`}>
-              <div className={mobileCellWrapperClass}>
-                <label className={thClass}>이름</label>
-                <div className={tdClass}><input name="guardian_name" value={form.guardian_name} onChange={handleChange} className={inputClass} disabled={!isEditing}/></div>
-              </div>
-               <div className={mobileCellWrapperClass}>
-                <label className={thClass}>연락처</label>
-                <div className={tdClass}><input name="guardian_phone" value={form.guardian_phone} onChange={handlePhoneChange} className={inputClass} placeholder="010-1234-5678" disabled={!isEditing}/></div>
-              </div>
-              <div className={mobileCellWrapperClass}>
-                <label className={thClass}>이용자와의 관계</label>
-                <div className={tdClass}>
-                  <select name="relationship" value={form.relationship} onChange={handleChange} className={inputClass} disabled={!isEditing}>
-                    <option value="">선택</option>
-                    {relationshipOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
-                  </select>
-                </div>
-              </div>
-              <div className={mobileCellWrapperClass}>
-                <label className={thClass}>참고사항</label>
-                <div className={tdClass}><input name="guardian_note" value={form.guardian_note} onChange={handleChange} className={inputClass} disabled={!isEditing}/></div>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 className={sectionTitleClass}>■ 이외 참고사항</h2>
-            <div className={`border ${tableBorderClass}`}>
-              <div className={mobileCellWrapperClass}>
-                <label className={thClass}>참고사항</label>
-                <div className={tdClass}><textarea name="note" value={form.note} onChange={handleChange} rows={3} className={inputClass} disabled={!isEditing}></textarea></div>
-              </div>
-            </div>
-          </section>
-          
-          {/* [수정] 수정 모드일 때만 저장/취소 버튼 보이기 */}
-          {isEditing && (
-            <div className="flex justify-center pt-4 gap-4">
-                <button type="button" onClick={() => { setIsEditing(false); /* window.location.reload(); */ }} className="w-full lg:w-auto px-8 py-2.5 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600">
-                    취소
-                </button>
-                <button type="submit" disabled={isSubmitting} className="w-full lg:w-auto px-8 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
-                    {isSubmitting ? "저장 중..." : "저장"}
-                </button>
-            </div>
-          )}
-        </form>
-      </div>
-    </>
-  );
-}
-
-// [추가] calculateAge, Senior, Residence, SeniorSex 등 필요한 타입/함수가 없으면 여기에 추가
 const calculateAge = (birthDate: string): number | null => {
-  if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
   const birth = new Date(birthDate);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
@@ -365,3 +31,369 @@ const calculateAge = (birthDate: string): number | null => {
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
   return age;
 };
+
+// 선택 옵션
+const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
+const residenceOptions: { key: string; value: string }[] = [
+  { key: "SINGLE_FAMILY_HOME", value: "단독주택" },
+  { key: "MULTIPLEX_HOUSING", value: "다세대주택" },
+  { key: "MULTI_FAMILY_HOUSING", value: "다가구주택" },
+  { key: "APARTMENT", value: "아파트" },
+];
+
+export default function UserEditPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id;
+
+  const [form, setForm] = useState({
+    doll_id: "", name: "", birth_date: "", sex: "" as SeniorSex | "",
+    phone: "", zip_code: "", address: "", address_detail: "",
+    gu: "", dong: "",
+    residence: "" as Residence | "",
+    status: "정상", diseases: "",
+    medications: "", disease_note: "", guardian_name: "", relationship: "",
+    guardian_phone: "", guardian_note: "", note: "",
+  });
+  const [birth, setBirth] = useState({ year: "", month: "", day: "" });
+  const [age, setAge] = useState<number | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+
+  const addressDetailRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Daum Postcode 스크립트
+  useEffect(() => {
+    const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    if (!document.querySelector(`script[src="${scriptUrl}"]`)) {
+      const script = document.createElement("script");
+      script.src = scriptUrl;
+      script.async = true;
+      script.onload = () => setIsScriptLoaded(true);
+      document.head.appendChild(script);
+    } else setIsScriptLoaded(true);
+  }, []);
+
+  // 데이터 로딩
+  useEffect(() => {
+    if (!id) return;
+    const fetchData = async () => {
+      try {
+        const res = await api.get(`/seniors/${id}`);
+        const data = res.data;
+
+        setForm({
+          doll_id: data.doll_id ?? "",
+          name: data.name ?? "",
+          birth_date: data.birth_date ?? "",
+          sex: data.sex ?? "",
+          phone: data.phone ?? "",
+          zip_code: "",
+          address: data.address ?? "",
+          address_detail: "",
+          gu: data.gu ?? "",
+          dong: data.dong ?? "",
+          residence: data.residence ?? "",
+          status: data.status ?? "정상",
+          diseases: data.diseases ?? "",
+          medications: data.medications ?? "",
+          disease_note: data.disease_note ?? "",
+          guardian_name: data.guardian_name ?? "",
+          relationship: data.relationship ?? "",
+          guardian_phone: data.guardian_phone ?? "",
+          guardian_note: data.guardian_note ?? "",
+          note: data.note ?? "",
+        });
+
+        setBirth({
+          year: data.birth_date?.slice(0, 4) ?? "",
+          month: data.birth_date?.slice(5, 7) ?? "",
+          day: data.birth_date?.slice(8, 10) ?? "",
+        });
+
+        setAge(calculateAge(data.birth_date ?? ""));
+        setPhotoPreview(data.photo_url ?? null);
+
+        // 최근 분석
+        const analysisRes = await api.get(`/seniors/${id}/analyses`);
+        setAnalyses(analysisRes.data ?? []);
+      } catch (err) {
+        console.error(err);
+        alert("데이터 로딩 실패");
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  // birth 변경 시 form.birth_date 업데이트 및 나이 계산
+  useEffect(() => {
+    const { year, month, day } = birth;
+    if (year.length === 4 && month.length > 0 && day.length > 0) {
+      const y = parseInt(year), m = parseInt(month), d = parseInt(day);
+      if (isValidDate(y, m, d)) {
+        const fullDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        setForm(prev => ({ ...prev, birth_date: fullDate }));
+        setAge(calculateAge(fullDate));
+      } else { setForm(prev => ({ ...prev, birth_date: "" })); setAge(null); }
+    } else { setForm(prev => ({ ...prev, birth_date: "" })); setAge(null); }
+  }, [birth]);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleBirthChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setBirth(prev => ({ ...prev, [e.target.name]: e.target.value.replace(/\D/g, "") }));
+
+  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const formatted = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, "$1-$2-$3").slice(0, 13);
+    setForm(prev => ({ ...prev, [name]: formatted }));
+  };
+
+  const handleZipSearch = () => {
+    if (isScriptLoaded && window.daum?.Postcode) {
+      new window.daum.Postcode({
+        oncomplete: (data) => {
+          setForm(prev => ({
+            ...prev,
+            zip_code: data.zonecode ?? "",
+            address: data.roadAddress ?? "",
+            gu: data.sigungu ?? "",
+            dong: data.bname ?? ""
+          }));
+          addressDetailRef.current?.focus();
+        }
+      }).open();
+    }
+  };
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setPhoto(file);
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  // 수정 제출
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const payload = { ...form };
+      const formData = new FormData();
+      formData.append("senior", new Blob([JSON.stringify(payload)], { type: "application/json" }));
+      if (photo) formData.append("photo", photo);
+      await api.put(`/seniors/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } });
+      alert("수정 완료");
+    } catch (err) { console.error(err); alert("수정 실패"); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    try { await api.delete(`/seniors/${id}`); alert("삭제 완료"); router.push("/main/users/view"); }
+    catch { alert("삭제 실패"); }
+  };
+
+  // --- UI 클래스 ---
+  const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
+  const tableBorderClass = "border-gray-400";
+  const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
+  const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
+  const tdClass = `border ${tableBorderClass} p-2 align-middle`;
+  const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
+  const requiredLabel = <span className="text-red-500 ml-1">*</span>;
+  const filledInputClass = "bg-blue-50";
+
+  return (
+    <div className="p-5 bg-white rounded-lg shadow-md max-w-5xl mx-auto text-black">
+      <h1 className="text-2xl font-bold mb-4 text-center">이용자 수정</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* ----------------- 사진 + 기본정보 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 기본정보</h2>
+          <table className={tableClass}>
+            <colgroup><col className="w-34" /><col className="w-28" /><col className="w-45" /><col className="w-35" /><col className="w-auto" /></colgroup>
+            <tbody>
+              <tr>
+                <td className={tdClass} rowSpan={5}>
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
+                      {photoPreview ? (
+                        <Image src={photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
+                      ) : (
+                        <span className="text-gray-400 text-sm">사진</span>
+                      )}
+                    </div>
+                    <input type="file" accept="image/*" onChange={handlePhotoChange} ref={photoInputRef} className="hidden" />
+                    <button type="button" onClick={() => photoInputRef.current?.click()} className="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">사진 첨부</button>
+                  </div>
+                </td>
+                <th className={thClass}>이름{requiredLabel}</th>
+                <td className={tdClass}><input name="name" value={form.name} onChange={handleChange} className={`${inputClass} w-full ${form.name ? filledInputClass : 'bg-white'}`} required /></td>
+                <th className={thClass}>생년월일 (나이){requiredLabel}</th>
+                <td className={tdClass}>
+                  <div className="flex items-center gap-1">
+                    <input name="year" value={birth.year} onChange={handleBirthChange} className={`${inputClass} w-20 text-center`} placeholder="YYYY" maxLength={4} required /> <span className="mr-2">년</span>
+                    <input name="month" value={birth.month} onChange={handleBirthChange} className={`${inputClass} w-14 text-center`} placeholder="MM" maxLength={2} required /> <span className="mr-2">월</span>
+                    <input name="day" value={birth.day} onChange={handleBirthChange} className={`${inputClass} w-14 text-center`} placeholder="DD" maxLength={2} required /> <span className="mr-2">일</span>
+                    <span>(만</span>
+                    <input readOnly value={age ?? ""} className={`${inputClass} w-15 text-center mx-1`} />
+                    <span>세)</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th className={thClass}>성별{requiredLabel}</th>
+                <td className={tdClass}>
+                  <select name="sex" value={form.sex} onChange={handleChange} className={`${inputClass} w-full bg-white`} required>
+                    <option value="">선택</option><option value="MALE">남</option><option value="FEMALE">여</option>
+                  </select>
+                </td>
+                <th className={thClass}>연락처{requiredLabel}</th>
+                <td className={tdClass}><input name="phone" value={form.phone} onChange={handlePhoneChange} className={`${inputClass} w-full bg-white`} placeholder="010-1234-5678" required /></td>
+              </tr>
+              <tr>
+                <th className={thClass}>현재 상태</th>
+                <td className={tdClass}><input value={form.status} readOnly className={`${inputClass} w-full bg-gray-100 text-center`} /></td>
+                <th className={thClass}>인형 아이디{requiredLabel}</th>
+                <td className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={`${inputClass} w-full bg-white`} required /></td>
+              </tr>
+              <tr>
+                <th className={thClass}>주소{requiredLabel}</th>
+                <td className={tdClass} colSpan={3}>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
+                      <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-400">
+                        {isScriptLoaded ? "우편번호 검색" : "서비스 로딩 중"}
+                      </button>
+                      <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
+                    </div>
+                    <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className={`${inputClass} w-full`} />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th className={thClass}>거주 형태{requiredLabel}</th>
+                <td className={tdClass} colSpan={3}>
+                  <div className="flex items-center gap-4 flex-wrap py-1">
+                    {residenceOptions.map((res, index) => (
+                      <label key={res.key} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="residence"
+                          value={res.key}
+                          checked={form.residence === res.key}
+                          onChange={handleChange}
+                          className="w-4 h-4"
+                          required={index === 0}
+                        /> {res.value}
+                      </label>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        {/* ----------------- 건강상태 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 건강상태</h2>
+          <table className={tableClass}>
+            <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
+            <tbody>
+              <tr>
+                <th className={thClass}>질병</th>
+                <td className={tdClass}><input name="diseases" value={form.diseases} onChange={handleChange} className={`${inputClass} w-full bg-white`} /></td>
+                <th className={thClass}>복용 약물</th>
+                <td className={tdClass}><input name="medications" value={form.medications} onChange={handleChange} className={`${inputClass} w-full bg-white`} /></td>
+              </tr>
+              <tr>
+                <th className={thClass}>상세 증상</th>
+                <td className={tdClass} colSpan={3}><textarea name="disease_note" value={form.disease_note} onChange={handleChange} rows={3} className={`${inputClass} w-full bg-white`} /></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        {/* ----------------- 보호자 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 보호자</h2>
+          <table className={tableClass}>
+            <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
+            <tbody>
+              <tr>
+                <th className={thClass}>이름{requiredLabel}</th>
+                <td className={tdClass}><input name="guardian_name" value={form.guardian_name} onChange={handleChange} className={`${inputClass} w-full bg-white`} required /></td>
+                <th className={thClass}>관계{requiredLabel}</th>
+                <td className={tdClass}>
+                  <select name="relationship" value={form.relationship} onChange={handleChange} className={`${inputClass} w-full bg-white`} required>
+                    <option value="">선택</option>
+                    {relationshipOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <th className={thClass}>연락처</th>
+                <td className={tdClass}><input name="guardian_phone" value={form.guardian_phone} onChange={handlePhoneChange} className={`${inputClass} w-full bg-white`} placeholder="010-1234-5678" /></td>
+                <th className={thClass}>비고</th>
+                <td className={tdClass}><input name="guardian_note" value={form.guardian_note} onChange={handleChange} className={`${inputClass} w-full bg-white`} /></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        {/* ----------------- 참고사항 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 참고사항</h2>
+          <textarea name="note" value={form.note} onChange={handleChange} rows={3} className={`${inputClass} w-full bg-white`} />
+        </section>
+
+        {/* ----------------- 최근 분석 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 최근 분석</h2>
+          {analyses.length > 0 ? (
+            <table className={tableClass}>
+              <thead>
+                <tr>
+                  <th className={thClass}>분석명</th>
+                  <th className={thClass}>날짜</th>
+                  <th className={thClass}>결과</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analyses.map(a => (
+                  <tr key={a.id}>
+                    <td className={tdClass}>{a.title}</td>
+                    <td className={tdClass}>{a.date}</td>
+                    <td className={tdClass}>{a.result}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <p>최근 분석이 없습니다.</p>}
+        </section>
+
+        {/* ----------------- 수정 / 삭제 버튼 ----------------- */}
+        <div className="flex justify-center gap-4 pt-4">
+          <button type="submit" disabled={isSubmitting} className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+            {isSubmitting ? "수정 중..." : "수정"}
+          </button>
+          <button type="button" onClick={handleDelete} className="px-8 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            삭제
+          </button>
+        </div>
+
+      </form>
+    </div>
+  );
+}

@@ -15,9 +15,7 @@ interface MenuItem {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [openSubMenus, setOpenSubMenus] = useState<{ [key: string]: boolean }>({
-    "이용자": true, // 기본으로 '이용자' 메뉴를 열어둡니다.
-  });
+  const [openSubMenus, setOpenSubMenus] = useState<{ [key: string]: boolean }>({});
 
   const toggleSubMenu = (label: string) => {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
@@ -25,14 +23,7 @@ export default function Sidebar() {
 
   const menuItems: MenuItem[] = [
     { label: "전체 현황", icon: "🕧", href: "/main" },
-    {
-      label: "이용자",
-      icon: "👨‍👩‍👧‍👦",
-      children: [
-        { label: "이용자 관리", href: "/main/users/view" },
-        { label: "이용자 등록", href: "/main/users/register" },
-      ],
-    },
+    { label: "이용자 관리", icon: "👨‍👩‍👧‍👦", href: "/main/users/view" },
     { label: "전체 분석결과", icon: "📋", href: "/main/analysis" },
     { label: "설정", icon: "⚙", href: "/main/setting" },
   ];
@@ -53,7 +44,9 @@ export default function Sidebar() {
                     {item.icon && <span>{item.icon}</span>}
                     <span>{item.label}</span>
                   </span>
-                  <span className="transform transition-transform duration-200">{openSubMenus[item.label] ? "▲" : "▼"}</span>
+                  <span className="transform transition-transform duration-200">
+                    {openSubMenus[item.label] ? "▲" : "▼"}
+                  </span>
                 </button>
                 {openSubMenus[item.label] && renderMenu(item.children, true)}
               </div>
