@@ -153,7 +153,7 @@ export default function AnalysisPage() {
       cell: (info) => (info.getValue() === "MALE" ? "남" : "여"),
     },
     { accessorKey: "gu", header: () => <div className="text-center">자치구</div> },
-    { accessorKey: "dong", header: () => <div className="text-center">행정동</div> },
+    { accessorKey: "dong", header: () => <div className="text-center">법정동</div> },
     {
       accessorKey: "label",
       header: () => <div className="text-center">분석 결과</div>,
@@ -243,7 +243,7 @@ export default function AnalysisPage() {
         나이: item.age,
         성별: item.sex === "MALE" ? "남" : "여",
         자치구: item.gu,
-        행정동: item.dong,
+        법정동: item.dong,
         "분석 결과": labelMap[item.label] || item.label,
         요약: item.summary,
         분석일시: new Date(item.timestamp).toLocaleString("ko-KR"),
@@ -338,7 +338,7 @@ export default function AnalysisPage() {
             </select>
           </div>
           <div className="flex items-center">
-            <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">행정동</label>
+            <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">법정동</label>
             <select name="dong" value={searchParams.dong} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5 bg-white" disabled={!searchParams.gu}>
               <option value="">전체</option>
               {availableDongs.map(d => (

@@ -90,7 +90,7 @@ export default function UserListPage() {
               <th className="border px-2 py-1">나이</th>
               <th className="border px-2 py-1">성별</th>
               <th className="border px-2 py-1">자치구</th>
-              <th className="border px-2 py-1">행정동</th>
+              <th className="border px-2 py-1">법정동</th>
               <th className="border px-2 py-1">현재 상태</th>
               <th className="border px-2 py-1">인형아이디</th>
               <th className="border px-2 py-1">전화번호</th>
