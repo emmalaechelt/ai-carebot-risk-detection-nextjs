@@ -7,26 +7,24 @@ import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
 import axios from "axios";
 
-// [수정] DaumPostcodeData 타입에 sigungu(구)와 bname(동) 추가
+// DaumPostcodeData 타입 정의 (변경 없음)
 interface DaumPostcodeData {
   zonecode: string;
   roadAddress: string;
-  sigungu: string; // 시/군/구 정보
-  bname: string;   // 법정동/리 이름
+  sigungu: string;
+  bname: string;
 }
 
+// Daum Postcode 관련 인터페이스 정의 (변경 없음)
 interface PostcodeOptions {
   oncomplete: (data: DaumPostcodeData) => void;
 }
-
 interface PostcodeInstance {
   open(): void;
 }
-
 interface PostcodeConstructor {
   new (options: PostcodeOptions): PostcodeInstance;
 }
-
 declare global {
   interface Window {
     daum?: {
@@ -53,17 +51,24 @@ const calculateAge = (birthDate: string): number | null => {
 
 const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
 
+// API 명세서의 정확한 문자열 값을 사용하여 데이터 정의 (변경 없음)
+const residenceOptions: { key: string; value: string }[] = [
+    { key: "SINGLE_FAMILY_HOME", value: "단독주택" },
+    { key: "MULTIPLEX_HOUSING", value: "다세대주택" },
+    { key: "MULTI_FAMILY_HOUSING", value: "다가구주택" },
+    { key: "APARTMENT", value: "아파트" },
+];
+
 export default function UserRegisterPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // [수정] 1단계: form 상태에 gu와 dong 필드 추가
   const [form, setForm] = useState({
     doll_id: "", name: "", birth_date: "", sex: "" as SeniorSex | "",
     phone: "", zip_code: "", address: "", address_detail: "",
-    gu: "", // [추가] gu 필드
-    dong: "", // [추가] dong 필드
-    residence: "" as Residence | "", status: "정상", diseases: "",
+    gu: "", dong: "",
+    residence: "" as Residence | "",
+    status: "정상", diseases: "",
     medications: "", disease_note: "", guardian_name: "", relationship: "",
     guardian_phone: "", guardian_note: "", note: "",
   });
@@ -76,7 +81,7 @@ export default function UserRegisterPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
-  // Daum 우편번호 스크립트 로드 (변경 없음)
+  // 나머지 코드는 모두 기존과 동일합니다 (핸들러, useEffect 등)
   useEffect(() => {
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
     const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
@@ -92,7 +97,6 @@ export default function UserRegisterPage() {
     return () => { document.head.querySelector(`script[src="${scriptUrl}"]`)?.remove(); };
   }, []);
 
-  // 생년월일 계산 로직 (변경 없음)
   useEffect(() => {
     const { year, month, day } = birth;
     if (year.length === 4 && month.length > 0 && day.length > 0) {
@@ -109,7 +113,6 @@ export default function UserRegisterPage() {
     }
   }, [birth]);
 
-  // 핸들러 함수들 (변경 없음)
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -138,7 +141,6 @@ export default function UserRegisterPage() {
     setForm(prev => ({ ...prev, [name]: formatted }));
   };
 
-  // [수정] 2단계: 우편번호 검색 시 gu와 dong 정보를 함께 저장
   const handleZipSearch = () => {
     if (isScriptLoaded && window.daum?.Postcode) {
       new window.daum.Postcode({
@@ -147,8 +149,8 @@ export default function UserRegisterPage() {
             ...prev,
             zip_code: data.zonecode,
             address: data.roadAddress,
-            gu: data.sigungu, // [추가] '구' 정보 저장
-            dong: data.bname,   // [추가] '동' 정보 저장
+            gu: data.sigungu,
+            dong: data.bname,
           }));
           addressDetailRef.current?.focus();
         },
@@ -165,50 +167,53 @@ export default function UserRegisterPage() {
     }
   };
 
+  // --- 여기부터가 핵심 수정 부분입니다 ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    const requiredFields = [form.doll_id, form.name, form.birth_date, form.sex, form.phone, form.address, form.guardian_name, form.guardian_phone, form.relationship];
+    // [수정] 필수 필드 검증에 `form.residence` 추가
+    const requiredFields = [form.doll_id, form.name, form.birth_date, form.sex, form.phone, form.address, form.residence, form.guardian_name, form.guardian_phone, form.relationship];
     if (requiredFields.some(field => !field)) {
       alert("필수 항목(*)을 모두 입력해주세요.");
       return;
     }
     setIsSubmitting(true);
     
-    // [수정] 3단계: seniorPayload에 gu와 dong 포함
+    // [수정] 제공된 JSON 형식과 100% 일치하도록 seniorPayload 객체 재구성
     const seniorPayload = {
       doll_id: form.doll_id,
       name: form.name,
       birth_date: form.birth_date,
       sex: form.sex,
+      residence: form.residence,
       phone: form.phone,
       address: `${form.address} ${form.address_detail}`.trim(),
-      gu: form.gu, // [추가]
-      dong: form.dong, // [추가]
-      diseases: form.diseases && form.disease_note
-        ? `${form.diseases} (상세: ${form.disease_note})`
-        : form.diseases,
-      medications: form.medications,
+      gu: form.gu,
+      dong: form.dong,
+      note: form.note,
       guardian_name: form.guardian_name,
       guardian_phone: form.guardian_phone,
       relationship: form.relationship,
       guardian_note: form.guardian_note,
-      note: form.residence
-        ? `[거주형태: ${form.residence}] ${form.note}`
-        : form.note,
+      diseases: form.diseases,         // `diseases`를 독립 필드로 전송
+      medications: form.medications,      // `medications`를 독립 필드로 전송
+      disease_note: form.disease_note,  // `disease_note`를 독립 필드로 전송
     };
 
     try {
       const formData = new FormData();
+      console.log(seniorPayload);
       formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
       if (photo) formData.append("photo", photo);
+
       await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
+
       alert("이용자 등록에 성공했습니다.");
       router.push("/main/users/view");
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const msg = error.response?.data?.message || "서버에서 오류가 발생했습니다.";
+        const msg = error.response?.data?.message || error.response?.data?.error || "서버에서 오류가 발생했습니다.";
         alert(`등록 실패: ${msg}`);
       } else {
         alert("등록 중 알 수 없는 오류가 발생했습니다.");
@@ -217,6 +222,7 @@ export default function UserRegisterPage() {
       setIsSubmitting(false);
     }
   };
+  // --- 여기까지가 핵심 수정 부분입니다 ---
 
   const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
   const tableBorderClass = "border-gray-400";
@@ -240,7 +246,6 @@ export default function UserRegisterPage() {
                 <tr>
                   <td className={tdClass} rowSpan={5}>
                     <div className="flex flex-col items-center justify-center h-full gap-3">
-                      {/* [수정] <img>를 <Image> 컴포넌트로 교체 */}
                       <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
                         {photoPreview ? (
                           <Image src={photoPreview} alt="사진 미리보기" layout="fill" objectFit="cover" />
@@ -266,7 +271,6 @@ export default function UserRegisterPage() {
                     </div>
                   </td>
                 </tr>
-                {/* 이하 JSX는 변경 없이 그대로 사용하시면 됩니다. */}
                 <tr>
                   <th className={thClass}>성별{requiredLabel}</th>
                   <td className={tdClass}>
@@ -298,13 +302,22 @@ export default function UserRegisterPage() {
                     </div>
                   </td>
                 </tr>
+                {/* [수정] 라디오 버튼 UI, 빨간 별표, 필수 입력 처리를 모두 적용 */}
                 <tr>
-                  <th className={thClass}>거주 형태</th>
+                  <th className={thClass}>거주 형태{requiredLabel}</th>
                   <td className={tdClass} colSpan={3}>
                     <div className="flex items-center gap-4 flex-wrap py-1">
-                      {Object.values(Residence).map((res) => (
-                        <label key={res} className="flex items-center gap-1.5 cursor-pointer">
-                          <input type="radio" name="residence" value={res} checked={form.residence === res} onChange={handleChange} className="w-4 h-4" /> {res}
+                      {residenceOptions.map((res, index) => (
+                        <label key={res.key} className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="residence"
+                            value={res.key}
+                            checked={form.residence === res.key}
+                            onChange={handleChange}
+                            className="w-4 h-4"
+                            required={index === 0}
+                          /> {res.value}
                         </label>
                       ))}
                     </div>
@@ -317,7 +330,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 건강상태</h2>
             <table className={tableClass}>
-              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /><col className="w-auto" /></colgroup>
+              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>질병</th>
@@ -336,7 +349,7 @@ export default function UserRegisterPage() {
           <section>
             <h2 className={sectionTitleClass}>■ 보호자</h2>
             <table className={tableClass}>
-              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /><col className="w-auto" /></colgroup>
+              <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
                 <tr>
                   <th className={thClass}>이름{requiredLabel}</th>
