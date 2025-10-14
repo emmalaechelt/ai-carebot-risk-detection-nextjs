@@ -1,4 +1,3 @@
-// src/app/main/analysis/[id]/page.tsx
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -8,9 +7,14 @@ import api from "@/lib/api";
 interface Dialogue {
   id: number;
   text: string;
-  time: string;
+  uttered_at: string;
   label: string;
-  scores: number[];
+  confidence_scores: {
+    positive: number;
+    danger: number;
+    critical: number;
+    emergency: number;
+  };
 }
 
 interface DetailData {
@@ -20,6 +24,7 @@ interface DetailData {
   doll_id: string;
   label: string;
   summary: string;
+  treatment_plan: string;
   reasons: string[];
   confidence_scores: {
     positive: number;
@@ -37,6 +42,13 @@ const labelColorMap: Record<string, string> = {
   POSITIVE: "bg-green-600",
 };
 
+const labelToKorean: Record<string, string> = {
+  EMERGENCY: "긴급",
+  CRITICAL: "위험",
+  DANGER: "주의",
+  POSITIVE: "안전",
+};
+
 export default function DetailedAnalysisPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -49,7 +61,6 @@ export default function DetailedAnalysisPage() {
       setLoading(true);
       try {
         const res = await api.get(`/analyze/${id}`);
-        console.log("API 응답 데이터:", res.data);
         setData(res.data || null);
       } catch (error) {
         console.error("Failed to fetch detail:", error);
@@ -103,14 +114,26 @@ export default function DetailedAnalysisPage() {
       {/* 분석 결과 카드 */}
       <div className="border rounded-lg p-6 bg-white shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <div className={`text-xl font-bold px-2 py-1 rounded ${labelColorMap[data.label] || "bg-gray-300"} text-white`}>
-            분석 결과: {data.label}
+          <div
+            className={`text-xl font-bold px-2 py-1 rounded ${
+              labelColorMap[data.label] || "bg-gray-300"
+            } text-white`}
+          >
+            분석 결과: {labelToKorean[data.label] || data.label}
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="font-bold">요약:</div>
           <div>{data.summary}</div>
+
+          <div className="font-bold">대처방안:</div>
+          <div>
+            {data.treatment_plan && data.treatment_plan.trim() !== ""
+              ? data.treatment_plan
+              : "대처방안 정보가 없습니다."}
+          </div>
+
           <div className="font-bold">근거:</div>
           <ul className="list-disc pl-6 space-y-1">
             {(data.reasons || []).map((reason, idx) => (
@@ -119,7 +142,7 @@ export default function DetailedAnalysisPage() {
           </ul>
         </div>
 
-        <div className="flex flex-wrap gap-4 pt-2">
+        <div className="flex flex-wrap gap-6 pt-2">
           {[
             { label: "긴급", value: data.confidence_scores.emergency, color: "bg-red-600" },
             { label: "위험", value: data.confidence_scores.critical, color: "bg-orange-600" },
@@ -127,7 +150,9 @@ export default function DetailedAnalysisPage() {
             { label: "안전", value: data.confidence_scores.positive, color: "bg-green-600" },
           ].map((score) => (
             <div key={score.label} className="flex flex-col items-start">
-              <span>{score.label}: {(score.value * 100).toFixed(1)}%</span>
+              <span>
+                {score.label}: {(score.value * 100).toFixed(1)}%
+              </span>
               <div className="w-64 h-4 bg-gray-200 rounded-full mt-1">
                 <div
                   className={`h-4 ${score.color} rounded-full`}
@@ -146,33 +171,49 @@ export default function DetailedAnalysisPage() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-gray-100 text-gray-700">
-                <th className="border p-2">순번</th>
-                <th className="border p-2">내용</th>
-                <th className="border p-2">시간</th>
-                <th className="border p-2">결과</th>
-                <th className="border p-2">Positive</th>
-                <th className="border p-2">Danger</th>
-                <th className="border p-2">Critical</th>
-                <th className="border p-2">Emergency</th>
+                <th className="border p-2 w-16">순번</th>
+                <th className="border p-2 w-1/2">내용</th>
+                <th className="border p-2 w-40">시간</th>
+                <th className="border p-2 w-20">결과</th>
+                <th className="border p-2 w-16">긴급</th>
+                <th className="border p-2 w-16">위험</th>
+                <th className="border p-2 w-16">주의</th>
+                <th className="border p-2 w-16">안전</th>
               </tr>
             </thead>
             <tbody>
-              {(data.dialogues || []).map((dlg, i) => (
-                <tr key={dlg.id} className="border-b hover:bg-gray-50">
-                  <td className="border p-2 text-center">{i + 1}</td>
-                  <td className="border p-2">{dlg.text}</td>
-                  <td className="border p-2 text-center">{dlg.time}</td>
-                  <td className="border p-2 text-center">{dlg.label}</td>
-                  {[
-                    dlg.scores?.[0] ?? 0,
-                    dlg.scores?.[1] ?? 0,
-                    dlg.scores?.[2] ?? 0,
-                    dlg.scores?.[3] ?? 0,
-                  ].map((s, idx) => (
-                    <td key={idx} className="border p-2 text-center">{(s * 100).toFixed(1)}%</td>
-                  ))}
-                </tr>
-              ))}
+              {(data.dialogues || []).map((dlg, i) => {
+                const time = new Date(dlg.uttered_at).toLocaleString("ko-KR", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                });
+                return (
+                  <tr key={dlg.id} className="border-b hover:bg-gray-50">
+                    <td className="border p-2 text-center">{i + 1}</td>
+                    <td className="border p-2">{dlg.text}</td>
+                    <td className="border p-2 text-center">{time}</td>
+                    <td className="border p-2 text-center">
+                      {labelToKorean[dlg.label] || dlg.label}
+                    </td>
+                    <td className="border p-2 text-center">
+                      {(dlg.confidence_scores.emergency * 100).toFixed(1)}%
+                    </td>
+                    <td className="border p-2 text-center">
+                      {(dlg.confidence_scores.critical * 100).toFixed(1)}%
+                    </td>
+                    <td className="border p-2 text-center">
+                      {(dlg.confidence_scores.danger * 100).toFixed(1)}%
+                    </td>
+                    <td className="border p-2 text-center">
+                      {(dlg.confidence_scores.positive * 100).toFixed(1)}%
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

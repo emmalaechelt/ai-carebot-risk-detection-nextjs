@@ -163,11 +163,11 @@ export default function UserEditPage() {
       formData.append("senior", new Blob([JSON.stringify(payload)], { type: "application/json" }));
       if (photo) formData.append("photo", photo);
       await api.put(`/seniors/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } });
-      alert("수정 완료");
-      router.push(`/view/${id}`);
+      alert("수정이 완료되었습니다.");
+      router.push(`/main/users/view/${id}`);
     } catch (err) {
       console.error(err);
-      alert("수정 실패");
+      alert("수정에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }

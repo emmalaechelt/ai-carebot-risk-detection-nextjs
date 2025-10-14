@@ -35,7 +35,7 @@ const calculateAge = (birthDate: string): number | null => {
   return age;
 };
 
-export default function UserEditPage() {
+export default function UserViewPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id;
@@ -46,6 +46,7 @@ export default function UserEditPage() {
     gu: "", dong: "", residence: "" as Residence | "",
     status: "정상", diseases: "", medications: "", disease_note: "",
     guardian_name: "", relationship: "", guardian_phone: "", guardian_note: "", note: "",
+    photo_url: "",
   });
 
   const [birth, setBirth] = useState({ year: "", month: "", day: "" });
@@ -77,37 +78,14 @@ export default function UserEditPage() {
     const fetchData = async () => {
       try {
         const { data } = await api.get(`/seniors/${id}`);
-        setForm({
-          doll_id: data.doll_id ?? "",
-          name: data.name ?? "",
-          birth_date: data.birth_date ?? "",
-          sex: data.sex ?? "",
-          phone: data.phone ?? "",
-          zip_code: data.zip_code ?? "",
-          address: data.address ?? "",
-          address_detail: data.address_detail ?? "",
-          gu: data.gu ?? "",
-          dong: data.dong ?? "",
-          residence: data.residence ?? "",
-          status: data.status ?? "정상",
-          diseases: data.diseases ?? "",
-          medications: data.medications ?? "",
-          disease_note: data.disease_note ?? "",
-          guardian_name: data.guardian_name ?? "",
-          relationship: data.relationship ?? "",
-          guardian_phone: data.guardian_phone ?? "",
-          guardian_note: data.guardian_note ?? "",
-          note: data.note ?? "",
-        });
-
+        setForm({ ...form, ...data });
         setBirth({
           year: data.birth_date?.slice(0, 4) ?? "",
           month: data.birth_date?.slice(5, 7) ?? "",
           day: data.birth_date?.slice(8, 10) ?? "",
         });
-
         setAge(calculateAge(data.birth_date ?? ""));
-        setPhotoPreview(data.photo_url ?? null);
+        setPhotoPreview(data.photo_url ?? "");
 
         const res = await api.get(`/seniors/${id}/analyses`);
         setAnalyses(res.data ?? []);
@@ -146,13 +124,7 @@ export default function UserEditPage() {
     if (isScriptLoaded && window.daum?.Postcode) {
       new window.daum.Postcode({
         oncomplete: (data: DaumPostcodeData) => {
-          setForm(prev => ({
-            ...prev,
-            zip_code: data.zonecode ?? "",
-            address: data.roadAddress ?? "",
-            gu: data.sigungu ?? "",
-            dong: data.bname ?? ""
-          }));
+          setForm(prev => ({ ...prev, zip_code: data.zonecode ?? "", address: data.roadAddress ?? "", gu: data.sigungu ?? "", dong: data.bname ?? "" }));
           addressDetailRef.current?.focus();
         }
       }).open();
@@ -203,7 +175,7 @@ export default function UserEditPage() {
     try {
       await api.delete(`/seniors/${id}`);
       alert("삭제 완료");
-      router.push("/main/users/view");
+      router.push("/main/users");
     } catch {
       alert("삭제 실패");
     }
@@ -211,190 +183,112 @@ export default function UserEditPage() {
 
   const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
   const tableBorderClass = "border-gray-400";
-  const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
-  const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
-  const tdClass = `border ${tableBorderClass} p-2 align-middle`;
+  const tableClass = `w-full border-collapse border ${tableBorderClass} text-sm`;
+  const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center`;
+  const tdClass = `border ${tableBorderClass} p-2`;
   const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
-  const filledInputClass = "bg-blue-50";
 
   return (
-    <div className="p-5 bg-white rounded-lg shadow-md max-w-5xl mx-auto text-black">
+    <div className="p-5 bg-white rounded-lg shadow-md max-w-6xl mx-auto text-black">
       <h1 className="text-2xl font-bold mb-4 text-center">이용자 수정</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* ----------------- 기본정보 ----------------- */}
         <section>
           <h2 className={sectionTitleClass}>■ 기본정보</h2>
-          <table className={tableClass}>
-            <tbody>
-              <tr>
-                <td className={tdClass} rowSpan={5}>
-                  <div className="flex flex-col items-center justify-center h-full gap-3">
-                    <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
-                      {photoPreview ? (
-                        <Image src={photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
-                      ) : (
-                        <span className="text-gray-400 text-sm">사진</span>
-                      )}
-                      {isUploading && <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-sm">업로드 중...</span>}
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => photoInputRef.current?.click()} className="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">사진 첨부</button>
-                      {photoPreview && (
-                        <button type="button" onClick={handlePhotoDelete} className="text-sm bg-red-200 px-3 py-1 rounded hover:bg-red-300">삭제</button>
-                      )}
-                    </div>
-                    <input type="file" accept="image/*" onChange={handlePhotoChange} ref={photoInputRef} className="hidden" />
-                  </div>
-                </td>
-                <th className={thClass}>이름{requiredLabel}</th>
-                <td className={tdClass}>
-                  <input name="name" value={form.name} onChange={handleChange} className={`${inputClass} w-full ${form.name ? filledInputClass : 'bg-white'}`} required />
-                </td>
-                <th className={thClass}>생년월일 (나이){requiredLabel}</th>
-                <td className={tdClass}>
-                  <div className="flex items-center gap-1">
-                    <input name="year" value={birth.year} onChange={handleBirthChange} className={`${inputClass} w-20 text-center`} placeholder="YYYY" maxLength={4} required />
-                    <span className="mr-2">년</span>
-                    <input name="month" value={birth.month} onChange={handleBirthChange} className={`${inputClass} w-14 text-center`} placeholder="MM" maxLength={2} required />
-                    <span className="mr-2">월</span>
-                    <input name="day" value={birth.day} onChange={handleBirthChange} className={`${inputClass} w-14 text-center`} placeholder="DD" maxLength={2} required />
-                    <span className="mr-2">일</span>
-                    <span>(만</span>
-                    <input readOnly value={age ?? ""} className={`${inputClass} w-15 text-center mx-1`} />
-                    <span>세)</span>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <th className={thClass}>성별{requiredLabel}</th>
-                <td className={tdClass}>
-                  <select name="sex" value={form.sex} onChange={handleChange} className={`${inputClass} w-full bg-white`} required>
-                    <option value="">선택</option>
-                    <option value="MALE">남</option>
-                    <option value="FEMALE">여</option>
-                  </select>
-                </td>
-                <th className={thClass}>연락처{requiredLabel}</th>
-                <td className={tdClass}>
-                  <input name="phone" value={form.phone} onChange={handlePhoneChange} className={`${inputClass} w-full bg-white`} placeholder="010-1234-5678" required />
-                </td>
-              </tr>
-              <tr>
-                <th className={thClass}>현재 상태</th>
-                <td className={tdClass}><input value={form.status} readOnly className={`${inputClass} w-full bg-gray-100 text-center`} /></td>
-                <th className={thClass}>인형 아이디{requiredLabel}</th>
-                <td className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={`${inputClass} w-full bg-white`} required /></td>
-              </tr>
-              <tr>
-                <th className={thClass}>주소{requiredLabel}</th>
-                <td className={tdClass} colSpan={3}>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
-                      <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-400">
-                        {isScriptLoaded ? "우편번호 검색" : "서비스 로딩 중"}
-                      </button>
-                      <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
-                    </div>
-                    <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className={`${inputClass} w-full`} />
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <th className={thClass}>거주 형태{requiredLabel}</th>
-                <td className={tdClass} colSpan={3}>
-                  <div className="flex items-center gap-4 flex-wrap py-1">
-                    {residenceOptions.map((res, index) => (
-                      <label key={res.key} className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="residence"
-                          value={res.key}
-                          checked={form.residence === res.key}
-                          onChange={handleChange}
-                          className="w-4 h-4"
-                          required={index === 0}
-                        /> {res.value}
-                      </label>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="flex items-center gap-4">
+            <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
+              {photoPreview ? <Image src={photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} /> : <span className="text-gray-400 text-sm">사진</span>}
+              {isUploading && <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-sm">업로드 중...</span>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <input type="file" accept="image/*" onChange={handlePhotoChange} ref={photoInputRef} className="hidden" />
+              <button type="button" onClick={() => photoInputRef.current?.click()} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">사진 첨부</button>
+              {photoPreview && <button type="button" onClick={handlePhotoDelete} className="px-3 py-1 bg-red-200 rounded hover:bg-red-300 text-sm">삭제</button>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <input name="name" value={form.name} onChange={handleChange} placeholder="이름" className="border px-2 py-1 rounded w-full" required />
+            <input name="phone" value={form.phone} onChange={handlePhoneChange} placeholder="010-1234-5678" className="border px-2 py-1 rounded w-full" required />
+          </div>
         </section>
 
-        {/* ----------------- 건강상태 ----------------- */}
+        {/* ----------------- 주소 ----------------- */}
         <section>
-          <h2 className={sectionTitleClass}>■ 건강상태</h2>
-          <table className={tableClass}>
-            <tbody>
-              <tr>
-                <th className={thClass}>질병</th>
-                <td className={tdClass}><input name="diseases" value={form.diseases} onChange={handleChange} className={`${inputClass} w-full bg-white`} /></td>
-                <th className={thClass}>복용 약물</th>
-                <td className={tdClass}><input name="medications" value={form.medications} onChange={handleChange} className={`${inputClass} w-full bg-white`} /></td>
-              </tr>
-              <tr>
-                <th className={thClass}>상세 증상</th>
-                <td className={tdClass} colSpan={3}><textarea name="disease_note" value={form.disease_note} onChange={handleChange} rows={3} className={`${inputClass} w-full bg-white`} /></td>
-              </tr>
-            </tbody>
-          </table>
+          <h2 className={sectionTitleClass}>■ 주소</h2>
+          <div className="flex gap-2 items-center">
+            <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className="border px-2 py-1 w-32 bg-gray-100" />
+            <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400">
+              우편번호 검색
+            </button>
+          </div>
+          <input name="address" value={form.address} readOnly placeholder="주소" className="border px-2 py-1 w-full bg-gray-100 mt-1" />
+          <input name="address_detail" ref={addressDetailRef} value={form.address_detail} onChange={handleChange} placeholder="상세주소" className="border px-2 py-1 w-full mt-1" />
+        </section>
+
+        {/* ----------------- 거주 형태 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 거주 형태</h2>
+          <div className="flex gap-4 flex-wrap">
+            {residenceOptions.map((res, index) => (
+              <label key={res.key} className="flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="residence" value={res.key} checked={form.residence === res.key} onChange={handleChange} required={index === 0
+                } /> {res.value}
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* ----------------- 건강 상태 ----------------- */}
+        <section>
+          <h2 className={sectionTitleClass}>■ 건강 상태</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <input name="diseases" value={form.diseases} onChange={handleChange} placeholder="질병" className="border px-2 py-1 rounded w-full" />
+            <input name="medications" value={form.medications} onChange={handleChange} placeholder="복용 약물" className="border px-2 py-1 rounded w-full" />
+          </div>
+          <textarea name="disease_note" value={form.disease_note} onChange={handleChange} rows={3} placeholder="상세 증상" className="border px-2 py-1 w-full mt-1 rounded" />
         </section>
 
         {/* ----------------- 보호자 ----------------- */}
         <section>
           <h2 className={sectionTitleClass}>■ 보호자</h2>
-          <table className={tableClass}>
-            <tbody>
-              <tr>
-                <th className={thClass}>이름{requiredLabel}</th>
-                <td className={tdClass}><input name="guardian_name" value={form.guardian_name} onChange={handleChange} className={`${inputClass} w-full bg-white`} required /></td>
-                <th className={thClass}>관계{requiredLabel}</th>
-                <td className={tdClass}>
-                  <select name="relationship" value={form.relationship} onChange={handleChange} className={`${inputClass} w-full bg-white`} required>
-                    <option value="">선택</option>
-                    {relationshipOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <th className={thClass}>연락처</th>
-                <td className={tdClass}><input name="guardian_phone" value={form.guardian_phone} onChange={handlePhoneChange} className={`${inputClass} w-full bg-white`} placeholder="010-1234-5678" /></td>
-                <th className={thClass}>비고</th>
-                <td className={tdClass}><input name="guardian_note" value={form.guardian_note} onChange={handleChange} className={`${inputClass} w-full bg-white`} /></td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="grid grid-cols-2 gap-4">
+            <input name="guardian_name" value={form.guardian_name} onChange={handleChange} placeholder="이름" className="border px-2 py-1 rounded w-full" />
+            <select name="relationship" value={form.relationship} onChange={handleChange} className="border px-2 py-1 rounded w-full">
+              <option value="">관계 선택</option>
+              {relationshipOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <input name="guardian_phone" value={form.guardian_phone} onChange={handlePhoneChange} placeholder="010-1234-5678" className="border px-2 py-1 rounded w-full" />
+            <input name="guardian_note" value={form.guardian_note} onChange={handleChange} placeholder="비고" className="border px-2 py-1 rounded w-full" />
+          </div>
         </section>
 
         {/* ----------------- 참고사항 ----------------- */}
         <section>
           <h2 className={sectionTitleClass}>■ 참고사항</h2>
-          <textarea name="note" value={form.note} onChange={handleChange} rows={3} className={`${inputClass} w-full bg-white`} />
+          <textarea name="note" value={form.note} onChange={handleChange} rows={3} placeholder="참고사항" className="border px-2 py-1 w-full mt-1 rounded" />
         </section>
 
         {/* ----------------- 최근 분석 ----------------- */}
         <section>
           <h2 className={sectionTitleClass}>■ 최근 분석</h2>
           {analyses.length > 0 ? (
-            <table className={tableClass}>
+            <table className="w-full border-collapse border border-gray-400 text-sm">
               <thead>
                 <tr>
-                  <th className={thClass}>분석명</th>
-                  <th className={thClass}>날짜</th>
-                  <th className={thClass}>결과</th>
+                  <th className="border border-gray-400 bg-gray-50 p-2">분석명</th>
+                  <th className="border border-gray-400 bg-gray-50 p-2">날짜</th>
+                  <th className="border border-gray-400 bg-gray-50 p-2">결과</th>
                 </tr>
               </thead>
               <tbody>
                 {analyses.map(a => (
                   <tr key={a.id}>
-                    <td className={tdClass}>{a.title}</td>
-                    <td className={tdClass}>{a.date}</td>
-                    <td className={tdClass}>{a.result}</td>
+                    <td className="border border-gray-400 p-2">{a.title}</td>
+                    <td className="border border-gray-400 p-2">{a.date}</td>
+                    <td className="border border-gray-400 p-2">{a.result}</td>
                   </tr>
                 ))}
               </tbody>
@@ -411,7 +305,6 @@ export default function UserEditPage() {
             삭제
           </button>
         </div>
-
       </form>
     </div>
   );

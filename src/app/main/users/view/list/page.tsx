@@ -4,17 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface User {
-  id: string;
-  userId: string;
+  senior_id: number;
   name: string;
   age: number;
-  gender: string;
-  district: string;
-  neighborhood: string;
-  status: string;
-  deviceId: string;
+  sex: "MALE" | "FEMALE";
+  gu: string;
+  dong: string;
+  state: "POSITIVE" | "DANGER" | "CRITICAL" | "EMERGENCY";
+  doll_id: string;
   phone: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export default function UserListPage() {
