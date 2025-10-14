@@ -13,21 +13,13 @@ interface DaumPostcodeData {
   sigungu: string;
   bname: string;
 }
-declare global {
-  interface Window {
-    daum?: {
-      Postcode: any;
-    };
-  }
-}
 
 // 분석 데이터 타입
 interface Analysis {
   id: number;
-  title: string;
-  date: string;
-  result: string;
-}
+  label: string;
+  summary: string;
+  timestamp: string;
 
 // 컴포넌트 외부 상수 정의
 const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
@@ -137,9 +129,9 @@ export default function UserDetailPage() {
         setAge(calculateAge(data.birth_date ?? ""));
         setPhotoPreview(data.photo_url ?? null);
         setOriginalPhoto(data.photo_url ?? null); // 원본 사진 설정
-
-        const res = await api.get(`/seniors/${id}/analyses`);
-        setAnalyses(res.data ?? []);
+        console.log(data.recent_overall_results)
+        console.log(data)
+        setAnalyses(data.recent_overall_results ?? []);
       } catch {
         alert("데이터를 불러오는 데 실패했습니다.");
       }
@@ -471,9 +463,9 @@ export default function UserDetailPage() {
               <tbody>
                 {analyses.map(a => (
                   <tr key={a.id}>
-                    <td className={tdClass}>{a.title}</td>
-                    <td className={`${tdClass} text-center`}>{a.date}</td>
-                    <td className={tdClass}>{a.result}</td>
+                    <td className={tdClass}>{a.summary}</td>
+                    <td className={`${tdClass} text-center`}>{a.timestamp}</td>
+                    <td className={tdClass}>{a.label}</td>
                   </tr>
                 ))}
               </tbody>
