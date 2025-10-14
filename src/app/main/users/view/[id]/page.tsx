@@ -23,7 +23,7 @@ interface Analysis {
 }
 
 // 컴포넌트 외부 상수 정의
-const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
+const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "조카", "기타"];
 const residenceOptions: { key: string; value: string }[] = [
   { key: "SINGLE_FAMILY_HOME", value: "단독주택" },
   { key: "MULTIPLEX_HOUSING", value: "다세대주택" },
@@ -119,7 +119,7 @@ export default function UserDetailPage() {
         };
 
         setForm(fetchedData);
-        setOriginalForm(fetchedData); // 원본 데이터 설정
+        setOriginalForm(fetchedData);
 
         setBirth({
           year: data.birth_date?.slice(0, 4) ?? "",
@@ -129,16 +129,17 @@ export default function UserDetailPage() {
 
         setAge(calculateAge(data.birth_date ?? ""));
         setPhotoPreview(data.photo_url ?? null);
-        setOriginalPhoto(data.photo_url ?? null); // 원본 사진 설정
-        console.log(data.recent_overall_results)
-        console.log(data)
-        setAnalyses(data.recent_overall_results ?? []);
+        setOriginalPhoto(data.photo_url ?? null);
+
+        // ✅ 최근 분석 최대 5개만 저장
+        setAnalyses((data.recent_overall_results ?? []).slice(0, 5));
       } catch {
         alert("데이터를 불러오는 데 실패했습니다.");
       }
     };
     fetchData();
   }, [id]);
+
 
   // 생년월일 변경 시 나이 및 form.birth_date 업데이트
   useEffect(() => {
@@ -451,35 +452,50 @@ export default function UserDetailPage() {
 
         {/* ----------------- 최근 분석 ----------------- */}
         <section>
-          <h2 className={sectionTitleClass}>■ 최근 분석 목록</h2>
+          <h2 className={sectionTitleClass}>■ 최근 분석 목록 (최대 5개까지)</h2>
           {analyses.length > 0 ? (
             <table className={tableClass}>
               <thead className="bg-gray-50">
                 <tr>
                   <th className={thClass}>분석명</th>
-                  <th className={thClass}>날짜</th>
                   <th className={thClass}>결과</th>
+                  <th className={thClass}>날짜</th>
                 </tr>
               </thead>
               <tbody>
-                {analyses.map(a => (
-                  <tr key={a.id}>
-                    <td className={tdClass}>{a.summary}</td>
-                    <td className={`${tdClass} text-center`}>{a.timestamp}</td>
-                    <td className={tdClass}>{a.label}</td>
-                  </tr>
-                ))}
+                {analyses.map(a => {
+                  const labelMap: Record<string, { text: string; color: string }> = {
+                    emergency: { text: "긴급", color: "text-red-600" },
+                    critical: { text: "위험", color: "text-orange-500" },
+                    danger: { text: "주의", color: "text-yellow-500" },
+                    positive: { text: "안전", color: "text-green-600" },
+                  };
+
+                  const key = a.label.toLowerCase(); // 소문자로 변환하여 매칭
+                  const { text: labelText, color: labelColor } = labelMap[key] || { text: a.label, color: "text-gray-600" };
+
+                  return (
+                    <tr key={a.id}>
+                      <td className={tdClass}>{a.summary}</td>
+                      <td className={`${tdClass} text-center ${labelColor}`}>{labelText}</td>
+                      <td className={`${tdClass} text-center`}>{new Date(a.timestamp).toLocaleString("ko-KR")}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-          ) : <p className="text-sm text-gray-500 py-4 text-center">최근 분석 기록이 없습니다.</p>}
+          ) : (
+            <p className="text-sm text-gray-500 py-4 text-center">최근 분석 기록이 없습니다.</p>
+          )}
         </section>
+
 
         {/* ----------------- 버튼 영역 ----------------- */}
         <div className="flex justify-center gap-4 pt-4">
           {isEditing ? (
             <>
               <button type="submit" disabled={isSubmitting} className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
-                {isSubmitting ? "저장 중..." : "저장"}
+                저장
               </button>
               <button type="button" onClick={handleToggleEdit} className="px-8 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
                 취소
