@@ -20,6 +20,7 @@ interface Analysis {
   label: string;
   summary: string;
   timestamp: string;
+}
 
 // 컴포넌트 외부 상수 정의
 const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
