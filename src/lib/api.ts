@@ -33,7 +33,7 @@ api.interceptors.response.use(
 
       try {
         // Refresh Token으로 새로운 Access Token 요청 (쿠키는 자동으로 전송됨)
-        const refreshResponse = await axios.post("http://127.0.0.1:8080/api/refresh", {}, {
+        const refreshResponse = await axios.post("http://localhost:8080/api/refresh", {}, {
           withCredentials: true,
         });
 

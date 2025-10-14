@@ -105,6 +105,7 @@ export default function UserDetailPage() {
     const fetchData = async () => {
       try {
         const { data } = await api.get(`/seniors/${id}`);
+        console.log(data)
         const fetchedData = {
           doll_id: data.doll_id ?? "", name: data.name ?? "",
           birth_date: data.birth_date ?? "", sex: data.sex ?? "",
@@ -299,7 +300,7 @@ export default function UserDetailPage() {
                   <div className="flex flex-col items-center justify-center h-full gap-3">
                     <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
                       {photoPreview ? (
-                        <Image src={photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
+                        <Image src={"http://localhost:8080" + photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
                       ) : (
                         <span className="text-gray-400 text-sm">사진</span>
                       )}
@@ -503,13 +504,18 @@ export default function UserDetailPage() {
             </>
           ) : (
             <>
-              <button type="button" onClick={handleToggleEdit} className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button
+                type="button"
+                onClick={() => router.push(`/main/users/edit/${id}`)}
+                className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
                 수정
               </button>
+
               <button type="button" onClick={handleDelete} className="px-8 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                 삭제
               </button>
-              <button type="button" onClick={() => router.back()} className="px-8 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300">
+              <button type="button" onClick={() => router.push("/main/users/view")} className="px-8 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300">
                 목록으로
               </button>
             </>
