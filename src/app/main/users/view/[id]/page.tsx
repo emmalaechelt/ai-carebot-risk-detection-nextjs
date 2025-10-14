@@ -23,7 +23,7 @@ interface Analysis {
 }
 
 // 컴포넌트 외부 상수 정의
-const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "조카", "기타"];
+const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
 const residenceOptions: { key: string; value: string }[] = [
   { key: "SINGLE_FAMILY_HOME", value: "단독주택" },
   { key: "MULTIPLEX_HOUSING", value: "다세대주택" },
@@ -129,7 +129,7 @@ export default function UserDetailPage() {
         });
 
         setAge(calculateAge(data.birth_date ?? ""));
-        setPhotoPreview(data.photo_url ?? null);
+        setPhotoPreview(data.photo_url ? "http://localhost:8080" + data.photo_url : null);
         setOriginalPhoto(data.photo_url ?? null);
 
         // ✅ 최근 분석 최대 5개만 저장
@@ -300,7 +300,7 @@ export default function UserDetailPage() {
                   <div className="flex flex-col items-center justify-center h-full gap-3">
                     <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
                       {photoPreview ? (
-                        <Image src={"http://localhost:8080" + photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
+                        <Image src={photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
                       ) : (
                         <span className="text-gray-400 text-sm">사진</span>
                       )}
@@ -476,7 +476,11 @@ export default function UserDetailPage() {
                   const { text: labelText, color: labelColor } = labelMap[key] || { text: a.label, color: "text-gray-600" };
 
                   return (
-                    <tr key={a.id}>
+                    <tr
+                      key={a.id}
+                      className="cursor-pointer hover:bg-gray-100"
+                      onClick={() => router.push(`/main/analysis/${a.id}`)} // ✅ 클릭 시 상세 페이지 이동
+                    >
                       <td className={tdClass}>{a.summary}</td>
                       <td className={`${tdClass} text-center ${labelColor}`}>{labelText}</td>
                       <td className={`${tdClass} text-center`}>{new Date(a.timestamp).toLocaleString("ko-KR")}</td>

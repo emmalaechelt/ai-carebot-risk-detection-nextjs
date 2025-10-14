@@ -49,7 +49,7 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
     formData.append("file", file);
 
     try {
-      await api.post("/analyze", formData);
+      await api.post("/analyze", formData, { headers: { "Content-Type": "multipart/form-data" } });
       alert("분석 요청에 성공했습니다.");
       onClose();
     } catch (err) {

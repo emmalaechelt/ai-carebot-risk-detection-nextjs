@@ -93,12 +93,8 @@ export default function UserEditPage() {
         const data = res.data;
         
         // 주소와 상세주소 분리 로직 (API 응답 형식에 맞게 조정)
-        const fullAddress = data.address || "";
-        // 예: "대전광역시 동구 중앙동 123-45"
-        // 이 로직은 주소 형식에 따라 더 정교하게 만들 수 있습니다.
-        const addressParts = fullAddress.split(" ");
-        const mainAddress = addressParts.slice(0, 4).join(" "); // "대전광역시 동구 중앙동 123-45"
-        const detailAddress = addressParts.slice(4).join(" "); // (만약 더 있다면)
+        const mainAddress = data.address;
+        const detailAddress = data.address_detail || "";
 
         setForm({
           doll_id: data.doll_id || "", name: data.name || "", birth_date: data.birth_date || "",
@@ -119,7 +115,7 @@ export default function UserEditPage() {
           setAge(calculateAge(data.birth_date));
         }
         if (data.photo_url) {
-          setPhotoPreview(data.photo_url);
+          setPhotoPreview("http://localhost:8080" + data.photo_url);
         }
       } catch {
         alert("이용자 정보를 불러오는 데 실패했습니다.");
@@ -208,7 +204,8 @@ export default function UserEditPage() {
     const seniorPayload = {
       doll_id: form.doll_id, name: form.name, birth_date: form.birth_date, sex: form.sex,
       residence: form.residence, phone: form.phone,
-      address: `${form.address} ${form.address_detail}`.trim(),
+      address: form.address,
+      address_detail: form.address_detail.trim(),
       gu: form.gu, dong: form.dong, note: form.note, guardian_name: form.guardian_name,
       guardian_phone: form.guardian_phone, relationship: form.relationship, guardian_note: form.guardian_note,
       diseases: form.diseases, medications: form.medications, disease_note: form.disease_note,
