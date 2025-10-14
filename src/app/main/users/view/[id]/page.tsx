@@ -298,6 +298,7 @@ export default function UserDetailPage() {
         <section>
           <h2 className={sectionTitleClass}>■ 기본정보</h2>
           <table className={tableClass}>
+            <colgroup><col className="w-34" /><col className="w-28" /><col className="w-45" /><col className="w-35" /><col className="w-auto" /></colgroup>
             <tbody>
               <tr>
                 <td className={tdClass} rowSpan={5}>
@@ -406,6 +407,7 @@ export default function UserDetailPage() {
         <section>
           <h2 className={sectionTitleClass}>■ 건강상태</h2>
           <table className={tableClass}>
+            <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
             <tbody>
               <tr>
                 <th className={thClass}>질병</th>
@@ -425,6 +427,7 @@ export default function UserDetailPage() {
         <section>
           <h2 className={sectionTitleClass}>■ 보호자</h2>
           <table className={tableClass}>
+            <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
             <tbody>
               <tr>
                 <th className={thClass}>이름{requiredLabel}</th>
@@ -449,13 +452,13 @@ export default function UserDetailPage() {
 
         {/* ----------------- 참고사항 ----------------- */}
         <section>
-          <h2 className={sectionTitleClass}>■ 참고사항</h2>
+          <h2 className={sectionTitleClass}>■ 이외 참고사항</h2>
           <textarea name="note" value={form.note} onChange={handleChange} rows={3} className={`${inputClass} w-full`} readOnly={!isEditing} />
         </section>
 
         {/* ----------------- 최근 분석 ----------------- */}
         <section>
-          <h2 className={sectionTitleClass}>■ 최근 분석</h2>
+          <h2 className={sectionTitleClass}>■ 최근 분석 목록</h2>
           {analyses.length > 0 ? (
             <table className={tableClass}>
               <thead className="bg-gray-50">
