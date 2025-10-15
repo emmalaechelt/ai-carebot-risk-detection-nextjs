@@ -299,11 +299,10 @@ export default function AnalysisPage() {
       <button
         key={number}
         onClick={() => table.setPageIndex(number - 1)}
-        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-          currentPage === number
+        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === number
             ? "bg-blue-600 text-white"
             : "bg-white text-gray-700 hover:bg-gray-100"
-        }`}
+          }`}
       >
         {number}
       </button>
@@ -389,10 +388,10 @@ export default function AnalysisPage() {
             <input name="senior_id" placeholder="번호" value={searchParams.senior_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
           </div>
           <div className="flex items-center col-span-1 md:col-span-2">
-             <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">분석일</label>
-             <input type="date" name="start_date" value={searchParams.start_date} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5"/>
-             <span className="mx-2">~</span>
-             <input type="date" name="end_date" value={searchParams.end_date} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5"/>
+            <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">분석일</label>
+            <input type="date" name="start_date" value={searchParams.start_date} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <span className="mx-2">~</span>
+            <input type="date" name="end_date" value={searchParams.end_date} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
           </div>
         </div>
 
@@ -412,17 +411,17 @@ export default function AnalysisPage() {
           <span className="font-semibold">검색 결과: 총 {totalElements} 건</span>
           {/* ✨ [수정] 페이지당 행 수 드롭다운 위치 이동 및 레이블 제거 */}
           <select
-              value={table.getState().pagination.pageSize}
-              onChange={e => {
-                  table.setPageSize(Number(e.target.value))
-              }}
-              className="border rounded px-2 py-1 bg-white text-sm"
+            value={table.getState().pagination.pageSize}
+            onChange={e => {
+              table.setPageSize(Number(e.target.value))
+            }}
+            className="border rounded px-2 py-1 bg-white text-sm"
           >
-              {[10, 20, 30, 40, 50].map(size => (
-                  <option key={size} value={size}>
-                      {size}개씩 보기
-                  </option>
-              ))}
+            {[10, 20, 30, 40, 50].map(size => (
+              <option key={size} value={size}>
+                {size}개씩 보기
+              </option>
+            ))}
           </select>
         </div>
         <div className="overflow-x-auto">
@@ -447,8 +446,8 @@ export default function AnalysisPage() {
                 table.getRowModel().rows.map(row => (
                   <tr key={row.id} className="bg-white border-b hover:bg-gray-50">
                     {row.getVisibleCells().map(cell => (
-                      <td 
-                        key={cell.id} 
+                      <td
+                        key={cell.id}
                         className={`px-4 py-3 align-middle ${cell.column.id !== 'summary' && cell.column.id !== 'timestamp' ? 'text-center' : 'text-left'}`}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -460,38 +459,53 @@ export default function AnalysisPage() {
             </tbody>
           </table>
         </div>
-        
-        {/* ✨ [수정] 페이지네이션 UI 변경 */}
-        <div className="flex items-center justify-center gap-2 mt-4 text-gray-600">
-            <button
-                className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-            >
-                {'<<'}
-            </button>
-            <button
-                className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-            >
-                {'<'}
-            </button>
+
+        {/* ✨ [수정] 페이지네이션 UI 변경 (위 스타일로 통일) */}
+        <div className="flex items-center justify-center gap-2 mt-4 text-sm">
+          {/* 처음으로 이동 */}
+          <button
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"
+              }`}
+          >
+            {"<<"}
+          </button>
+
+          {/* 이전 페이지 */}
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"
+              }`}
+          >
+            {"<"}
+          </button>
+
+          {/* 페이지 번호 */}
+          <div className="flex gap-2 min-w-[200px] justify-between">
             {renderPageNumbers()}
-            <button
-                className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-            >
-                {'>'}
-            </button>
-            <button
-                className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-            >
-                {'>>'}
-            </button>
+          </div>
+
+          {/* 다음 페이지 */}
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"
+              }`}
+          >
+            {">"}
+          </button>
+
+          {/* 마지막 페이지 */}
+          <button
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"
+              }`}
+          >
+            {">>"}
+          </button>
         </div>
       </div>
     </div>
