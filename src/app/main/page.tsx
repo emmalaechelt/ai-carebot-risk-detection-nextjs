@@ -1,4 +1,3 @@
-// src/app/main/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,7 +5,7 @@ import api from "@/lib/api";
 import { DashboardData } from "@/types";
 import Link from "next/link";
 
-// ✨ 변경점: 대시보드 로딩을 위한 스켈레톤 컴포넌트
+// ✨ 스켈레톤 컴포넌트
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -39,7 +38,6 @@ function DashboardSkeleton() {
   );
 }
 
-
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +45,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // 로딩 상태를 확실히 하기 위해 초기화
       setLoading(true);
       try {
         const response = await api.get<DashboardData>("/dashboard");
@@ -62,17 +59,18 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
-  // ✨ 변경점: 로딩 중일 때 스켈레톤 UI를 보여줌
   if (loading) return <DashboardSkeleton />;
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
-  
-  const riskColor: { [key: string]: string } = {
-    EMERGENCY: "text-red-600 border-red-200 bg-red-50",
-    CRITICAL: "text-orange-600 border-orange-200 bg-orange-50",
-    DANGER: "text-yellow-400 border-yellow-200 bg-yellow-50",
-    POSITIVE: "text-green-600 border-green-200 bg-green-50",
+
+  const riskInfo: Record<string, { label: string; className: string }> = {
+    EMERGENCY: { label: "긴급", className: "text-red-600 border-red-200 bg-red-50" },
+    CRITICAL: { label: "위험", className: "text-orange-600 border-orange-200 bg-orange-50" },
+    DANGER: { label: "주의", className: "text-yellow-500 border-yellow-200 bg-yellow-50" },
+    POSITIVE: { label: "안전", className: "text-green-600 border-green-200 bg-green-50" },
   };
+
+  const defaultRisk = { label: "", className: "text-black border-gray-200 bg-white" };
 
   return (
     <div className="space-y-6">
@@ -84,54 +82,55 @@ export default function DashboardPage() {
             <div className="text-gray-700">총 이용자</div>
             <div className="text-2xl font-bold text-black">{data.state_count.total}명</div>
           </div>
-          <div className={riskColor.EMERGENCY.split(' ')[0]}>
-            <div>긴급</div>
-            <div className="text-xl font-bold">{data.state_count.emergency}명</div>
-          </div>
-          <div className={riskColor.CRITICAL.split(' ')[0]}>
-            <div>위험</div>
-            <div className="text-xl font-bold">{data.state_count.critical}명</div>
-          </div>
-          <div className={riskColor.DANGER.split(' ')[0]}>
-            <div>주의</div>
-            <div className="text-xl font-bold">{data.state_count.danger}명</div>
-          </div>
-          <div className={riskColor.POSITIVE.split(' ')[0]}>
-            <div>안전</div>
-            <div className="text-xl font-bold">{data.state_count.positive}명</div>
-          </div>
+          {(["EMERGENCY", "CRITICAL", "DANGER", "POSITIVE"] as const).map((key) => {
+            const risk = riskInfo[key] || defaultRisk;
+            const countKey = key.toLowerCase() as keyof DashboardData["state_count"];
+            return (
+              <div key={key} className={`${risk.className} rounded-lg p-2`}>
+                <div className="font-semibold text-xl">{risk.label}</div>
+                <div className="text-xl font-bold">{data.state_count[countKey]}명</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 최근 긴급 분석 결과 */}
-      <div className="border rounded-lg p-4 bg-white shadow-sm">
-        <h2 className="text-lg font-bold mb-4 text-black">긴급 분석 결과 (최근 10건)</h2>
-        <div className="space-y-3">
+      {/* 최근 분석 결과 */}
+      <div className="border rounded-lg p-3 bg-white shadow-sm max-w-full">
+        <h2 className="text-lg font-bold mb-3 text-black">최근 분석 결과 (최대 10건)</h2>
+        <div className="space-y-2">
           {data.recent_urgent_results.length > 0 ? (
-            data.recent_urgent_results.map((item) => (
-              <Link href={`/main/analysis/${item.overall_result_id}`} key={item.overall_result_id}>
-                <div
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${riskColor[item.label] || ''}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xl">👤</span>
-                    <div>
-                      <span className="font-semibold">{item.name}</span> ({item.sex === 'MALE' ? '남' : '여'}/{item.age}세)
-                      <div className="text-sm text-gray-500 flex items-center space-x-2">
-                        <span>📍 {item.gu} {item.dong}</span>
-                        <span>⏱ {new Date(item.timestamp).toLocaleString('ko-KR')}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 mt-1 truncate">{item.summary}</p>
+            data.recent_urgent_results.map((item) => {
+              const risk = riskInfo[item.label] || defaultRisk;
+              return (
+                <Link href={`/main/analysis/${item.overall_result_id}`} key={item.overall_result_id}>
+                  <div
+                    className={`relative flex flex-col px-2 py-1 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${risk.className}`}
+                  >
+                    {/* 첫 줄: 이모지 + 이름 + 성별/나이 + 주소 + 시간 */}
+                    <div className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+                      <span>👤</span>
+                      <span className="font-semibold text-black">{item.senior_name}</span>
+                      <span>({item.sex === "MALE" ? "남" : "여"}/{item.age}세)</span>
+                      <span>📍 {item.gu} {item.dong}</span>
+                      <span>⏱ {new Date(item.timestamp).toLocaleString("ko-KR")}</span>
                     </div>
+                    {/* 둘째 줄: 요약 */}
+                    <div className="mt-1 text-base text-gray-700 truncate">{item.summary}</div>
+                    {/* 오른쪽 상단 배지 */}
+                    {risk.label && (
+                      <span
+                        className={`absolute top-2 right-2 text-xl font-semibold px-2 py-0.5 rounded-full ${risk.className}`}
+                      >
+                        {risk.label}
+                      </span>
+                    )}
                   </div>
-                  <span className={`text-sm font-bold px-2 py-1 rounded-full ${riskColor[item.label]}`}>
-                    {item.label}
-                  </span>
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           ) : (
-            <p className="text-center text-gray-500 py-4">최근 긴급 분석 결과가 없습니다.</p>
+            <p className="text-center text-gray-500 py-4">최근 분석 결과가 없습니다.</p>
           )}
         </div>
       </div>
