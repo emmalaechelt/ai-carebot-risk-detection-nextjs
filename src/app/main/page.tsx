@@ -72,19 +72,18 @@ export default function DashboardPage() {
 
   const defaultRisk = { label: "", className: "text-black border-gray-200 bg-white", priority: 5 };
 
-  // 중복 제거 + 긴급 우선 + 요약 합치기
-  const mergedAndSortedResults = () => {
+  // 이름 기준으로 중복 제거 + 긴급 우선 + 요약 합치기 + 시간순 정렬
+  const getDisplayResults = () => {
     const map = new Map<string, { label: string; summary: string; latest: any }>();
 
     data.recent_urgent_results.forEach((item) => {
-      const timeKey = new Date(item.timestamp).toISOString();
-      const key = `${item.senior_name}-${timeKey}`;
+      const key = item.senior_name; // 이름 기준으로 중복 체크
 
       if (!map.has(key)) {
         map.set(key, { label: item.label, summary: item.summary, latest: item });
       } else {
         const existing = map.get(key)!;
-        // 긴급 우선
+        // 위험도 우선
         if (riskInfo[item.label].priority < riskInfo[existing.label].priority) {
           existing.label = item.label;
         }
@@ -92,16 +91,20 @@ export default function DashboardPage() {
         if (!existing.summary.includes(item.summary)) {
           existing.summary += " / " + item.summary;
         }
+        // 최신 timestamp 선택
+        if (new Date(item.timestamp) > new Date(existing.latest.timestamp)) {
+          existing.latest = item;
+        }
       }
     });
 
-    // 배열 변환 후 긴급>위험>주의>안전 순 정렬
     return Array.from(map.values())
       .map((v) => ({ ...v.latest, label: v.label, summary: v.summary }))
-      .sort((a, b) => (riskInfo[a.label]?.priority || 5) - (riskInfo[b.label]?.priority || 5));
+      .sort((a, b) => (riskInfo[a.label]?.priority || 5) - (riskInfo[b.label]?.priority || 5))
+      .slice(0, 10); // 최대 10건
   };
 
-  const displayResults = mergedAndSortedResults();
+  const displayResults = getDisplayResults();
 
   return (
     <div className="space-y-6">
@@ -129,7 +132,7 @@ export default function DashboardPage() {
       {/* 최근 분석 결과 */}
       <div className="border rounded-lg p-3 bg-white shadow-sm max-w-full">
         <h2 className="text-lg font-bold mb-3 text-black">최근 분석 결과 (최대 10건)</h2>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {displayResults.length > 0 ? (
             displayResults.map((item) => {
               const risk = riskInfo[item.label] || defaultRisk;
