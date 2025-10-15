@@ -138,7 +138,9 @@ export default function DollsPage() {
         key={number}
         onClick={() => table.setPageIndex(number - 1)}
         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-          currentPage === number ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"
+          currentPage === number
+            ? "bg-blue-600 text-white"
+            : "bg-white text-gray-700 hover:bg-gray-100"
         }`}
       >
         {number}
@@ -209,40 +211,54 @@ export default function DollsPage() {
         </div>
 
         {/* 페이지네이션 */}
-        <div className="flex items-center justify-center gap-2 mt-4 text-gray-600">
+        <div className="flex items-center justify-center gap-2 mt-4 text-sm">
+          {/* 처음으로 이동 */}
           <button
-            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
+              table.getCanPreviousPage() ? "text-black" : "text-gray-400"
+            }`}
           >
-            {'<<'}
-          </button>
-          <button
-            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            {'<'}
+            {"<<"}
           </button>
 
-          {/* 고정 폭 컨테이너로 페이지 버튼 위치 흔들림 방지 */}
+          {/* 이전 페이지 */}
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
+              table.getCanPreviousPage() ? "text-black" : "text-gray-400"
+            }`}
+          >
+            {"<"}
+          </button>
+
+          {/* 페이지 번호 */}
           <div className="flex gap-2 min-w-[200px] justify-between">
             {renderPageNumbers()}
           </div>
 
+          {/* 다음 페이지 */}
           <button
-            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
+              table.getCanNextPage() ? "text-black" : "text-gray-400"
+            }`}
           >
-            {'>'}
+            {">"}
           </button>
+
+          {/* 마지막 페이지 */}
           <button
-            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
+              table.getCanNextPage() ? "text-black" : "text-gray-400"
+            }`}
           >
-            {'>>'}
+            {">>"}
           </button>
         </div>
       </div>

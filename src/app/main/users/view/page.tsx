@@ -316,21 +316,70 @@ export default function UsersViewPage() {
         </div>
 
         <div className="flex justify-center items-center mt-2 space-x-2 text-sm">
-          <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 border rounded disabled:opacity-50 hover:bg-gray-100">«</button>
-          <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 border rounded disabled:opacity-50 hover:bg-gray-100">‹</button>
+          {/* 처음으로 이동 */}
+          <button
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? 'text-black' : 'text-gray-400'
+              }`}
+          >
+            {'<<'}
+          </button>
+
+          {/* 이전 페이지 */}
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? 'text-black' : 'text-gray-400'
+              }`}
+          >
+            {'<'}
+          </button>
+
+          {/* 페이지 번호 */}
           <div className="flex items-center space-x-2">
-            {Array.from({ length: Math.min(5, pageCount - Math.floor(pageIndex / 5) * 5) }, (_, i) => {
-              const pageNumber = Math.floor(pageIndex / 5) * 5 + i;
-              if (pageNumber < pageCount) {
-                return (
-                  <button key={pageNumber} onClick={() => table.setPageIndex(pageNumber)} className={`px-3 py-1 rounded-md cursor-pointer ${pageNumber === pageIndex ? 'bg-blue-500 text-white font-bold' : 'text-black hover:underline'}`}>{pageNumber + 1}</button>
-                );
+            {Array.from(
+              { length: Math.min(5, pageCount - Math.floor(pageIndex / 5) * 5) },
+              (_, i) => {
+                const pageNumber = Math.floor(pageIndex / 5) * 5 + i;
+                if (pageNumber < pageCount) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => table.setPageIndex(pageNumber)}
+                      className={`px-3 py-1 rounded-md cursor-pointer ${pageNumber === pageIndex
+                          ? 'bg-blue-500 text-white font-bold'
+                          : 'text-black hover:underline'
+                        }`}
+                    >
+                      {pageNumber + 1}
+                    </button>
+                  );
+                }
+                return null;
               }
-              return null;
-            })}
+            )}
           </div>
-          <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="px-2.5 py-1 border rounded disabled:opacity-50 hover:bg-gray-100">›</button>
-          <button onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} className="px-2.5 py-1 border rounded disabled:opacity-50 hover:bg-gray-100">»</button>
+
+          {/* 다음 페이지 */}
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? 'text-black' : 'text-gray-400'
+              }`}
+          >
+            {'>'}
+          </button>
+
+          {/* 마지막 페이지로 이동 */}
+          <button
+            onClick={() => table.setPageIndex(pageCount - 1)}
+            disabled={!table.getCanNextPage()}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? 'text-black' : 'text-gray-400'
+              }`}
+          >
+            {'>>'}
+          </button>
         </div>
       </div>
     </div>
