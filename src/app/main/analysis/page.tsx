@@ -139,7 +139,7 @@ export default function AnalysisPage() {
     },
     {
       accessorKey: "doll_id",
-      header: () => <div className="text-center">인형 ID</div>,
+      header: () => <div className="text-center">인형ID</div>,
     },
     {
       accessorKey: "senior_id",
@@ -237,7 +237,7 @@ export default function AnalysisPage() {
 
       const excelData = allData.map((item, index) => ({
         순번: index + 1,
-        "인형 ID": item.doll_id,
+        "인형ID": item.doll_id,
         "이용자 번호": item.senior_id,
         이름: item.name,
         나이: item.age,
@@ -381,8 +381,8 @@ export default function AnalysisPage() {
             <input name="name" placeholder="이름" value={searchParams.name} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
           </div>
           <div className="flex items-center">
-            <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">인형 ID</label>
-            <input name="doll_id" placeholder="인형 ID" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">인형ID</label>
+            <input name="doll_id" placeholder="인형ID" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
           </div>
           <div className="flex items-center">
             <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">이용자 번호</label>

@@ -352,7 +352,28 @@ export default function UserDetailPage() {
               </tr>
               <tr>
                 <th className={thClass}>현재 상태</th>
-                <td className={tdClass}><input value={form.status} readOnly className={`${inputClass} w-full bg-gray-100 text-center`} /></td>
+                <td className={tdClass}>
+                  <input
+                    readOnly
+                    value={
+                      {
+                        emergency: "긴급",
+                        critical: "위험",
+                        danger: "주의",
+                        positive: "안전",
+                        normal: "정상",
+                      }[form.status?.toLowerCase()] || form.status
+                    }
+                    className={`${inputClass} w-full text-center ${{
+                        emergency: "text-red-600",
+                        critical: "text-orange-500",
+                        danger: "text-yellow-500",
+                        positive: "text-green-600",
+                        normal: "text-gray-600",
+                      }[form.status?.toLowerCase()] || "text-gray-600"
+                      }`}
+                  />
+                </td>
                 <th className={thClass}>인형 아이디{requiredLabel}</th>
                 <td className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={`${inputClass} w-full`} readOnly={!isEditing} required /></td>
               </tr>

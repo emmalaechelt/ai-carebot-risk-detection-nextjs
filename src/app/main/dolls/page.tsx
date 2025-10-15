@@ -31,7 +31,6 @@ export default function DollsPage() {
   const fetchDolls = useCallback(async () => {
     try {
       setLoading(true);
-      // 서버에서 페이지 기반 데이터 가져오기
       const dolls = await dollApi.getList(); // 필요시 API를 pageIndex/pageSize 기반으로 수정
       setData(dolls);
       setTotalElements(dolls.length);
@@ -47,7 +46,6 @@ export default function DollsPage() {
     fetchDolls();
   }, [fetchDolls]);
 
-  // 삭제 핸들러
   const handleDelete = async (dollId: string) => {
     if (!confirm(`정말로 인형 "${dollId}"을(를) 삭제하시겠습니까?`)) return;
     try {
@@ -61,7 +59,6 @@ export default function DollsPage() {
     }
   };
 
-  // 등록 핸들러
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     if (!newDollId.trim()) {
@@ -85,22 +82,10 @@ export default function DollsPage() {
     }
   };
 
-  // 테이블 컬럼
   const columns = useMemo<ColumnDef<DollListView>[]>(() => [
-    {
-      id: "index",
-      header: "순번",
-      cell: (info) => info.row.index + 1,
-    },
-    {
-      accessorKey: "id",
-      header: "인형 ID",
-    },
-    {
-      accessorKey: "senior_id",
-      header: "이용자 번호",
-      cell: (info) => info.getValue() ?? "-",
-    },
+    { id: "index", header: "순번", cell: (info) => info.row.index + 1 },
+    { accessorKey: "id", header: "인형 ID" },
+    { accessorKey: "senior_id", header: "이용자 번호", cell: (info) => info.getValue() ?? "-" },
     {
       id: "actions",
       header: "관리",
@@ -130,7 +115,7 @@ export default function DollsPage() {
 
   const renderPageNumbers = () => {
     const currentPage = pageIndex + 1;
-    const pageNumbers = [];
+    const pageNumbers: number[] = [];
     const maxPagesToShow = 5;
 
     if (totalPages <= maxPagesToShow) {
@@ -151,11 +136,9 @@ export default function DollsPage() {
     return pageNumbers.map((number) => (
       <button
         key={number}
-        onClick={() => table.setPagination((p) => ({ ...p, pageIndex: number - 1 }))}
+        onClick={() => table.setPageIndex(number - 1)}
         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-          currentPage === number
-            ? "bg-blue-600 text-white"
-            : "bg-white text-gray-700 hover:bg-gray-100"
+          currentPage === number ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"
         }`}
       >
         {number}
@@ -180,7 +163,6 @@ export default function DollsPage() {
           </button>
         </div>
 
-        {/* 페이지당 개수 선택 */}
         <div className="flex justify-end mt-2">
           <select
             value={pageSize}
@@ -199,10 +181,7 @@ export default function DollsPage() {
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="border-b px-2 py-1 font-medium text-gray-600 whitespace-nowrap"
-                    >
+                    <th key={header.id} className="border-b px-2 py-1 font-medium text-gray-600 whitespace-nowrap">
                       {flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
@@ -211,11 +190,7 @@ export default function DollsPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={columns.length} className="py-4 text-gray-500">
-                    불러오는 중...
-                  </td>
-                </tr>
+                <tr><td colSpan={columns.length} className="py-4 text-gray-500">불러오는 중...</td></tr>
               ) : table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50 border-b">
@@ -227,11 +202,7 @@ export default function DollsPage() {
                   </tr>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={columns.length} className="py-4 text-gray-500">
-                    등록된 인형이 없습니다.
-                  </td>
-                </tr>
+                <tr><td colSpan={columns.length} className="py-4 text-gray-500">등록된 인형이 없습니다.</td></tr>
               )}
             </tbody>
           </table>
@@ -240,38 +211,42 @@ export default function DollsPage() {
         {/* 페이지네이션 */}
         <div className="flex items-center justify-center gap-2 mt-4 text-gray-600">
           <button
-            className="px-2 py-1 border rounded disabled:opacity-50"
-            onClick={() => setPagination(p => ({ ...p, pageIndex: 0 }))}
-            disabled={pageIndex === 0}
+            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
           >
             {'<<'}
           </button>
           <button
-            className="px-2 py-1 border rounded disabled:opacity-50"
-            onClick={() => setPagination(p => ({ ...p, pageIndex: Math.max(p.pageIndex - 1, 0) }))}
-            disabled={pageIndex === 0}
+            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
           >
             {'<'}
           </button>
-          {renderPageNumbers()}
+
+          {/* 고정 폭 컨테이너로 페이지 버튼 위치 흔들림 방지 */}
+          <div className="flex gap-2 min-w-[200px] justify-between">
+            {renderPageNumbers()}
+          </div>
+
           <button
-            className="px-2 py-1 border rounded disabled:opacity-50"
-            onClick={() => setPagination(p => ({ ...p, pageIndex: Math.min(p.pageIndex + 1, totalPages - 1) }))}
-            disabled={pageIndex >= totalPages - 1}
+            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
           >
             {'>'}
           </button>
           <button
-            className="px-2 py-1 border rounded disabled:opacity-50"
-            onClick={() => setPagination(p => ({ ...p, pageIndex: totalPages - 1 }))}
-            disabled={pageIndex >= totalPages - 1}
+            className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
           >
             {'>>'}
           </button>
         </div>
       </div>
 
-      {/* 등록 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded-xl shadow-lg p-4 w-full max-w-sm space-y-3">

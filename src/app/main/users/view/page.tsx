@@ -164,7 +164,7 @@ export default function UsersViewPage() {
         cell: (info) =>
           statusMap[info.getValue() as string] || (info.getValue() as string),
       },
-      { accessorKey: "doll_id", header: "인형아이디" },
+      { accessorKey: "doll_id", header: "인형ID" },
       { accessorKey: "phone", header: "전화번호" },
       {
         accessorKey: "created_at",
@@ -269,7 +269,7 @@ export default function UsersViewPage() {
           </div>
 
           <div className="lg:col-span-2 flex items-center">
-            <label className="w-28 shrink-0 font-medium text-gray-700 text-right pr-2">인형 아이디</label>
+            <label className="w-28 shrink-0 font-medium text-gray-700 text-right pr-2">인형ID</label>
             <input name="doll_id" placeholder="인형 아이디" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1" />
           </div>
         </div>
