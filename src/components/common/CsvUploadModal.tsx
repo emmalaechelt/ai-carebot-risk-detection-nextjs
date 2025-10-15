@@ -1,4 +1,3 @@
-// src/components/common/CsvUploadModal.tsx
 "use client";
 
 import { useState, ChangeEvent, DragEvent } from "react";
@@ -92,7 +91,7 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
             대화 파일 분석 요청 (CSV)
@@ -111,7 +110,7 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
           onDragOver={handleDragEvents}
           onDragLeave={handleDragEvents}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-            ${isDragOver ? "border-blue-600 bg-blue-100" : "border-gray-400 bg-white"}`}
+            ${isDragOver ? "border-blue-600 bg-blue-100" : "border-gray-300 bg-white"}`}
         >
           <input
             type="file"
@@ -123,7 +122,9 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
           <label htmlFor="csv-upload" className="cursor-pointer">
             {!file ? (
               <>
-                <p className="text-gray-900 font-medium">파일을 드래그하거나 클릭하여 업로드</p>
+                <p className="text-gray-900 font-medium">
+                  파일을 드래그하거나 클릭하여 업로드
+                </p>
                 <p className="text-sm text-gray-600 mt-1">(.csv 형식만 가능)</p>
               </>
             ) : (
@@ -145,17 +146,17 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
           <p className="text-center mt-4 text-sm text-red-600 font-medium">{error}</p>
         )}
 
-        <div className="mt-6 flex justify-end space-x-2">
+        <div className="mt-6 flex justify-end space-x-3">
           <button
             onClick={handleSubmit}
             disabled={isUploading || !file}
-            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400 font-medium transition-colors"
+            className="px-5 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400 font-medium transition-colors"
           >
             {isUploading ? "업로드 중..." : "분석 요청"}
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 font-medium transition-colors"
+            className="px-5 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 font-medium transition-colors"
           >
             취소
           </button>

@@ -63,14 +63,45 @@ export default function DashboardPage() {
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
 
-  const riskInfo: Record<string, { label: string; className: string }> = {
-    EMERGENCY: { label: "긴급", className: "text-red-600 border-red-200 bg-red-50" },
-    CRITICAL: { label: "위험", className: "text-orange-600 border-orange-200 bg-orange-50" },
-    DANGER: { label: "주의", className: "text-yellow-500 border-yellow-200 bg-yellow-50" },
-    POSITIVE: { label: "안전", className: "text-green-600 border-green-200 bg-green-50" },
+  const riskInfo: Record<string, { label: string; className: string; priority: number }> = {
+    EMERGENCY: { label: "긴급", className: "text-red-600 border-red-200 bg-red-50", priority: 1 },
+    CRITICAL: { label: "위험", className: "text-orange-600 border-orange-200 bg-orange-50", priority: 2 },
+    DANGER: { label: "주의", className: "text-yellow-500 border-yellow-200 bg-yellow-50", priority: 3 },
+    POSITIVE: { label: "안전", className: "text-green-600 border-green-200 bg-green-50", priority: 4 },
   };
 
-  const defaultRisk = { label: "", className: "text-black border-gray-200 bg-white" };
+  const defaultRisk = { label: "", className: "text-black border-gray-200 bg-white", priority: 5 };
+
+  // 중복 제거 + 긴급 우선 + 요약 합치기
+  const mergedAndSortedResults = () => {
+    const map = new Map<string, { label: string; summary: string; latest: any }>();
+
+    data.recent_urgent_results.forEach((item) => {
+      const timeKey = new Date(item.timestamp).toISOString();
+      const key = `${item.senior_name}-${timeKey}`;
+
+      if (!map.has(key)) {
+        map.set(key, { label: item.label, summary: item.summary, latest: item });
+      } else {
+        const existing = map.get(key)!;
+        // 긴급 우선
+        if (riskInfo[item.label].priority < riskInfo[existing.label].priority) {
+          existing.label = item.label;
+        }
+        // 요약 합치기
+        if (!existing.summary.includes(item.summary)) {
+          existing.summary += " / " + item.summary;
+        }
+      }
+    });
+
+    // 배열 변환 후 긴급>위험>주의>안전 순 정렬
+    return Array.from(map.values())
+      .map((v) => ({ ...v.latest, label: v.label, summary: v.summary }))
+      .sort((a, b) => (riskInfo[a.label]?.priority || 5) - (riskInfo[b.label]?.priority || 5));
+  };
+
+  const displayResults = mergedAndSortedResults();
 
   return (
     <div className="space-y-6">
@@ -98,17 +129,17 @@ export default function DashboardPage() {
       {/* 최근 분석 결과 */}
       <div className="border rounded-lg p-3 bg-white shadow-sm max-w-full">
         <h2 className="text-lg font-bold mb-3 text-black">최근 분석 결과 (최대 10건)</h2>
-        <div className="space-y-2">
-          {data.recent_urgent_results.length > 0 ? (
-            data.recent_urgent_results.map((item) => {
+        <div className="space-y-3">
+          {displayResults.length > 0 ? (
+            displayResults.map((item) => {
               const risk = riskInfo[item.label] || defaultRisk;
               return (
                 <Link href={`/main/analysis/${item.overall_result_id}`} key={item.overall_result_id}>
                   <div
-                    className={`relative flex flex-col px-2 py-1 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${risk.className}`}
+                    className={`relative flex flex-col px-3 py-2 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${risk.className}`}
                   >
                     {/* 첫 줄: 이모지 + 이름 + 성별/나이 + 주소 + 시간 */}
-                    <div className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
                       <span>👤</span>
                       <span className="font-semibold text-black">{item.senior_name}</span>
                       <span>({item.sex === "MALE" ? "남" : "여"}/{item.age}세)</span>
@@ -116,7 +147,7 @@ export default function DashboardPage() {
                       <span>⏱ {new Date(item.timestamp).toLocaleString("ko-KR")}</span>
                     </div>
                     {/* 둘째 줄: 요약 */}
-                    <div className="mt-1 text-base text-gray-700 truncate">{item.summary}</div>
+                    <div className="mt-1 text-base text-gray-700">{item.summary}</div>
                     {/* 오른쪽 상단 배지 */}
                     {risk.label && (
                       <span

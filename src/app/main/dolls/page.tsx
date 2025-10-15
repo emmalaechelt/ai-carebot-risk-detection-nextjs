@@ -18,8 +18,8 @@ export default function DollsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newDollId, setNewDollId] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // 페이지네이션 상태
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 15,
@@ -31,12 +31,12 @@ export default function DollsPage() {
   const fetchDolls = useCallback(async () => {
     try {
       setLoading(true);
-      const dolls = await dollApi.getList(); // 필요시 API를 pageIndex/pageSize 기반으로 수정
+      const dolls = await dollApi.getList(); // 필요시 pageIndex/pageSize 반영
       setData(dolls);
       setTotalElements(dolls.length);
     } catch (error) {
       console.error("인형 목록 불러오기 실패:", error);
-      alert("인형 목록을 불러오는 데 실패했습니다.");
+      alert("인형 목록을 불러오는 데 실패했습니다. 네트워크 상태를 확인하세요.");
     } finally {
       setLoading(false);
     }
@@ -48,6 +48,8 @@ export default function DollsPage() {
 
   const handleDelete = async (dollId: string) => {
     if (!confirm(`정말로 인형 "${dollId}"을(를) 삭제하시겠습니까?`)) return;
+    setActionLoading(true);
+
     try {
       await dollApi.delete(dollId);
       alert("삭제되었습니다.");
@@ -55,30 +57,72 @@ export default function DollsPage() {
     } catch (error) {
       const err = error as AxiosError;
       console.error(err);
-      alert("삭제 중 오류가 발생했습니다.");
+
+      if (err.response) {
+        switch (err.response.status) {
+          case 409:
+            alert(`삭제할 수 없는 상태입니다. 이미 할당되어 있습니다.`);
+            // 409 에러 발생해도 목록 갱신
+            fetchDolls();
+            break;
+          case 404:
+            alert(`삭제할 인형을 찾을 수 없습니다.`);
+            fetchDolls();
+            break;
+          default:
+            alert(`삭제 중 오류가 발생했습니다. (HTTP ${err.response.status})`);
+            fetchDolls();
+        }
+      } else if (err.request) {
+        alert("서버 응답이 없습니다. 네트워크 상태를 확인하세요.");
+      } else {
+        alert(`삭제 중 알 수 없는 오류가 발생했습니다: ${err.message}`);
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newDollId.trim()) {
+    const trimmedId = newDollId.trim();
+    if (!trimmedId) {
       alert("인형 ID를 입력해주세요.");
       return;
     }
+
+    setActionLoading(true);
     try {
-      await dollApi.create(newDollId.trim());
+      await dollApi.create(trimmedId);
       alert("인형이 등록되었습니다.");
       setNewDollId("");
       setIsModalOpen(false);
       fetchDolls();
     } catch (error) {
       const err = error as AxiosError;
-      if (err.response?.status === 409) {
-        alert("이미 존재하는 인형 ID입니다. 다른 ID를 입력해주세요.");
+      console.error(err);
+
+      if (err.response) {
+        switch (err.response.status) {
+          case 409:
+            alert("이미 존재하는 인형 ID입니다. 다른 ID를 입력해주세요.");
+            break;
+          case 400:
+            alert("잘못된 요청입니다. 입력한 데이터를 확인해주세요.");
+            break;
+          case 500:
+            alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            break;
+          default:
+            alert(`등록 중 오류가 발생했습니다. (HTTP ${err.response.status})`);
+        }
+      } else if (err.request) {
+        alert("서버 응답이 없습니다. 네트워크 상태를 확인하세요.");
       } else {
-        console.error("등록 실패:", err);
-        alert("등록 중 오류가 발생했습니다.");
+        alert(`등록 중 알 수 없는 오류가 발생했습니다: ${err.message}`);
       }
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -92,13 +136,16 @@ export default function DollsPage() {
       cell: (info) => (
         <button
           onClick={() => handleDelete(info.row.original.id)}
-          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-xs"
+          disabled={actionLoading}
+          className={`px-2 py-1 rounded text-xs ${
+            actionLoading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-red-500 text-white hover:bg-red-600"
+          }`}
         >
           삭제
         </button>
       ),
     },
-  ], []);
+  ], [actionLoading]);
 
   const table = useReactTable({
     data,
@@ -159,6 +206,7 @@ export default function DollsPage() {
           </span>
           <button
             onClick={() => setIsModalOpen(true)}
+            disabled={actionLoading}
             className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 text-sm font-semibold"
           >
             등록
@@ -210,53 +258,35 @@ export default function DollsPage() {
           </table>
         </div>
 
-        {/* 페이지네이션 */}
         <div className="flex items-center justify-center gap-2 mt-4 text-sm">
-          {/* 처음으로 이동 */}
           <button
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
-              table.getCanPreviousPage() ? "text-black" : "text-gray-400"
-            }`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}
           >
             {"<<"}
           </button>
-
-          {/* 이전 페이지 */}
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
-              table.getCanPreviousPage() ? "text-black" : "text-gray-400"
-            }`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}
           >
             {"<"}
           </button>
-
-          {/* 페이지 번호 */}
           <div className="flex gap-2 min-w-[200px] justify-between">
             {renderPageNumbers()}
           </div>
-
-          {/* 다음 페이지 */}
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
-              table.getCanNextPage() ? "text-black" : "text-gray-400"
-            }`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}
           >
             {">"}
           </button>
-
-          {/* 마지막 페이지 */}
           <button
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${
-              table.getCanNextPage() ? "text-black" : "text-gray-400"
-            }`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}
           >
             {">>"}
           </button>
@@ -275,22 +305,29 @@ export default function DollsPage() {
                   value={newDollId}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setNewDollId(e.target.value)}
                   placeholder="인형 고유 ID 입력"
-                  className="w-full border rounded px-2 py-1 text-sm"
+                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  disabled={actionLoading}
                 />
               </div>
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-gray-400 text-sm"
+                  disabled={actionLoading}
+                  className={`px-3 py-1 rounded text-sm ${
+                    actionLoading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-gray-300 text-black hover:bg-gray-400"
+                  }`}
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
+                  disabled={actionLoading}
+                  className={`px-3 py-1 rounded text-sm ${
+                    actionLoading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
                 >
-                  등록
+                  {actionLoading ? "처리 중..." : "등록"}
                 </button>
               </div>
             </form>
