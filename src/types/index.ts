@@ -1,5 +1,3 @@
-// src/types/index.ts
-
 // --- 인증 및 회원 ---
 export interface Member {
   username: string;
@@ -97,4 +95,9 @@ export interface DashboardData {
     emergency: number;
   };
   recent_urgent_results: OverallResult[];
+}
+
+export interface DollListView {
+  id: string;              // 인형의 고유 ID
+  senior_id: number | null; // 할당된 시니어 ID (없으면 null)
 }

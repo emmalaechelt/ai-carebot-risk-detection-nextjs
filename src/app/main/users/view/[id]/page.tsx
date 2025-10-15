@@ -112,7 +112,7 @@ export default function UserDetailPage() {
           phone: data.phone ?? "", zip_code: data.zip_code ?? "",
           address: data.address ?? "", address_detail: data.address_detail ?? "",
           gu: data.gu ?? "", dong: data.dong ?? "",
-          residence: data.residence ?? "", status: data.status ?? "정상",
+          residence: data.residence ?? "", status: data.state ?? "안전",
           diseases: data.diseases ?? "", medications: data.medications ?? "",
           disease_note: data.disease_note ?? "", guardian_name: data.guardian_name ?? "",
           relationship: data.relationship ?? "", guardian_phone: data.guardian_phone ?? "",
@@ -458,7 +458,7 @@ export default function UserDetailPage() {
             <table className={tableClass}>
               <thead className="bg-gray-50">
                 <tr>
-                  <th className={thClass}>분석명</th>
+                  <th className={thClass}>분석 내용</th>
                   <th className={thClass}>결과</th>
                   <th className={thClass}>날짜</th>
                 </tr>
@@ -472,17 +472,17 @@ export default function UserDetailPage() {
                     positive: { text: "안전", color: "text-green-600" },
                   };
 
-                  const key = a.label.toLowerCase(); // 소문자로 변환하여 매칭
+                  const key = a.label.toLowerCase();
                   const { text: labelText, color: labelColor } = labelMap[key] || { text: a.label, color: "text-gray-600" };
 
                   return (
                     <tr
                       key={a.id}
-                      className="cursor-pointer hover:bg-gray-100"
-                      onClick={() => router.push(`/main/analysis/${a.id}`)} // ✅ 클릭 시 상세 페이지 이동
+                      className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
+                      onClick={() => router.push(`/main/analysis/${a.id}`)}
                     >
                       <td className={tdClass}>{a.summary}</td>
-                      <td className={`${tdClass} text-center ${labelColor}`}>{labelText}</td>
+                      <td className={`${tdClass} text-center ${labelColor} font-semibold`}>{labelText}</td>
                       <td className={`${tdClass} text-center`}>{new Date(a.timestamp).toLocaleString("ko-KR")}</td>
                     </tr>
                   );
@@ -493,6 +493,7 @@ export default function UserDetailPage() {
             <p className="text-sm text-gray-500 py-4 text-center">최근 분석 기록이 없습니다.</p>
           )}
         </section>
+
 
 
         {/* ----------------- 버튼 영역 ----------------- */}

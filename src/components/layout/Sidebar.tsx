@@ -1,4 +1,3 @@
-// src/components/layout/Sidebar.tsx
 "use client";
 
 import Image from "next/image";
@@ -21,17 +20,21 @@ export default function Sidebar() {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
+  // [수정] menuItems 배열에 '인형 관리' 추가
   const menuItems: MenuItem[] = [
     { label: "전체 현황", icon: "🕧", href: "/main" },
     { label: "이용자 관리", icon: "👨‍👩‍👧‍👦", href: "/main/users/view" },
     { label: "전체 분석결과", icon: "📋", href: "/main/analysis" },
+    { label: "인형 관리", icon: "🧸", href: "/main/dolls" }, 
     { label: "설정", icon: "⚙", href: "/main/setting" },
   ];
 
   const renderMenu = (items: MenuItem[], isSubMenu = false): ReactNode => (
     <ul className={`${isSubMenu ? "ml-4 mt-1 text-sm space-y-1" : "space-y-2 text-gray-700"}`}>
       {items.map(item => {
-        const isActive = item.href && pathname === item.href;
+        // [수정] isActive 로직을 startsWith로 변경하여 하위 경로에서도 메뉴가 활성화되도록 수정
+        const isActive = item.href && (pathname === item.href || (item.href !== "/main" && pathname.startsWith(item.href)));
+        
         return (
           <li key={item.label}>
             {item.children ? (
