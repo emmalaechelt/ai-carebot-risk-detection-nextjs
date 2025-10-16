@@ -72,25 +72,28 @@ export default function DashboardPage() {
 
   const defaultRisk = { label: "", className: "text-black border-gray-200 bg-white", priority: 5 };
 
-  // 이름 기준으로 중복 제거 + 긴급 우선 + 요약 합치기 + 시간순 정렬
+  // 이름 기준으로 중복 제거 + 긴급 우선 + 요약 합치기 + 최근 시간 기준 정렬
   const getDisplayResults = () => {
     const map = new Map<string, { label: string; summary: string; latest: any }>();
 
     data.recent_urgent_results.forEach((item) => {
-      const key = item.senior_name; // 이름 기준으로 중복 체크
+      const key = item.senior_name; // 이름 기준
 
       if (!map.has(key)) {
         map.set(key, { label: item.label, summary: item.summary, latest: item });
       } else {
         const existing = map.get(key)!;
+
         // 위험도 우선
         if (riskInfo[item.label].priority < riskInfo[existing.label].priority) {
           existing.label = item.label;
         }
+
         // 요약 합치기
         if (!existing.summary.includes(item.summary)) {
           existing.summary += " / " + item.summary;
         }
+
         // 최신 timestamp 선택
         if (new Date(item.timestamp) > new Date(existing.latest.timestamp)) {
           existing.latest = item;
@@ -98,9 +101,10 @@ export default function DashboardPage() {
       }
     });
 
+    // 가장 최근 시간순으로 정렬
     return Array.from(map.values())
       .map((v) => ({ ...v.latest, label: v.label, summary: v.summary }))
-      .sort((a, b) => (riskInfo[a.label]?.priority || 5) - (riskInfo[b.label]?.priority || 5))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 10); // 최대 10건
   };
 
