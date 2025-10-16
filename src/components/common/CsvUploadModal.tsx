@@ -72,18 +72,23 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
       }
     } catch (err) {
       const axiosError = err as AxiosError;
+      const status = axiosError.response?.status;
+      const serverMsg = axiosError.response?.data?.message;
 
-      if (axiosError.response?.status === 404) {
-        setError(
-          "분석 대상 인형 ID가 없거나, 해당 인형에 시니어가 할당되지 않았습니다. CSV 파일의 doll_id를 확인해주세요."
-        );
-      } else if (axiosError.response?.status === 400) {
-        setError("CSV 파일 형식이 잘못되었거나 비어 있습니다. 파일을 확인해주세요.");
-      } else if (axiosError.response?.status === 503) {
-        setError("분석 서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.");
-      } else {
-        setError("업로드 또는 분석에 실패했습니다. 파일 형식을 확인해주세요.");
-      }
+      if (status === 400)
+        setError(`요청 형식이 올바르지 않습니다.\n(입력값 확인 필요)\n${serverMsg || ""}`);
+      else if (status === 401)
+        setError("인증이 만료되었습니다. 다시 로그인 해주세요.");
+      else if (status === 403)
+        setError("수정 권한이 없습니다. 관리자에게 문의하세요.");
+      else if (status === 404)
+        setError("이용자 정보를 찾을 수 없습니다.");
+      else if (status === 409)
+        setError("이미 등록된 인형 또는 중복된 데이터가 존재합니다.");
+      else if (status === 500)
+        setError("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      else
+        setError(serverMsg || "예상치 못한 오류가 발생했습니다.");
     } finally {
       setIsUploading(false);
     }
@@ -91,7 +96,7 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
             대화 파일 분석 요청 (CSV)
@@ -146,19 +151,26 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
           <p className="text-center mt-4 text-sm text-red-600 font-medium">{error}</p>
         )}
 
-        <div className="mt-6 flex justify-end space-x-3">
+        <div className="mt-6 flex justify-end gap-3">
           <button
-            onClick={handleSubmit}
-            disabled={isUploading || !file}
-            className="px-5 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400 font-medium transition-colors"
-          >
-            {isUploading ? "업로드 중..." : "분석 요청"}
-          </button>
-          <button
+            type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 font-medium transition-colors"
+            disabled={isUploading}
+            className={`px-4 py-2 rounded text-base ${
+              isUploading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-gray-300 text-black hover:bg-gray-400"
+            }`}
           >
             취소
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isUploading || !file}
+            className={`px-4 py-2 rounded text-base ${
+              isUploading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+            }`}
+          >
+            {isUploading ? "분석 중..." : "분석 요청"}
           </button>
         </div>
       </div>
