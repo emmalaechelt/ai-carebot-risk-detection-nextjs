@@ -64,6 +64,14 @@ export default function DetailedAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
+  // 영어 -> 한국어 매핑
+  const reasonMap: Record<string, string> = {
+    emergency: "긴급",
+    critical: "위험",
+    danger: "주의",
+    positive: "안전",
+  };
+
   useEffect(() => {
     if (!id) return;
     const fetchDetail = async () => {
@@ -116,7 +124,7 @@ export default function DetailedAnalysisPage() {
       rows.push(["분석 결과", labelToKorean[data.label] || data.label]);
       rows.push(["요약", data.summary]);
       rows.push(["대처방안", data.treatment_plan || "정보 없음"]);
-      rows.push(["근거", (data.reasons || []).join(", ")]);
+      rows.push(["근거", (data.reasons || []).map(r => reasonMap[r] || r).join(", ")]);
       rows.push([]);
 
       // confidence scores
@@ -175,28 +183,27 @@ export default function DetailedAnalysisPage() {
     );
 
   return (
-    <div className="p-6 space-y-6 text-black">
-      <h2 className="text-3xl font-bold text-center">전체 분석결과</h2>
-
-      <div className="flex justify-end mt-2">
+    <div className="p-6 space-y-3 text-black">
+      <h2 className="text-3xl font-bold text-center">전체 분석 결과</h2>
+      <div className="flex justify-end -mt-1">
         <button
           onClick={handleExcelDownload}
           disabled={downloading}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-bold text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {downloading ? "다운로드 중..." : "엑셀 다운로드"}
         </button>
       </div>
 
-      <div className="border rounded-lg p-6 bg-gray-50 flex flex-wrap gap-4">
+      <div className="border rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 space-x-6">
         <div className="font-bold w-full text-xl">이용자 정보</div>
-        <span>이름: {data.senior_name}</span>
-        <span>질병: {data.diseases}</span>
-        <span>나이: {data.age}세</span>
-        <span>인형 ID: {data.doll_id}</span>
+        <span>이름 : {data.senior_name}</span>
+        <span>질병 : {data.diseases || "-"}</span>
+        <span>나이 : {data.age}세</span>
+        <span>인형 ID : {data.doll_id}</span>
       </div>
 
-      <div className="border rounded-lg p-6 bg-white shadow-sm space-y-4">
+      <div className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
         <div className="flex items-center">
           <div
             className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${labelColorMap[data.label] || "bg-gray-300"
@@ -207,21 +214,27 @@ export default function DetailedAnalysisPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="font-bold">요약:</div>
-          <div>{data.summary}</div>
+          <div className="flex">
+            <span className="font-bold mr-2">요약 :</span>
+            <span>{data.summary}</span>
+          </div>
 
-          <div className="font-bold">대처방안:</div>
-          <div>{data.treatment_plan?.trim() || "대처방안 정보가 없습니다."}</div>
+          <div className="flex">
+            <span className="font-bold mr-2">대처 방안 :</span>
+            <span>{data.treatment_plan?.trim() || "대처 방안 정보가 없습니다."}</span>
+          </div>
 
-          <div className="font-bold">근거:</div>
-          <ul className="list-disc pl-6 space-y-1">
-            {(data.reasons || []).map((reason, idx) => (
-              <li key={idx}>{reason}</li>
-            ))}
-          </ul>
+          <div className="flex">
+            <span className="font-bold mr-2">근거 :</span>
+            <ul className="space-y-1">
+              {(data.reasons || []).map((reason, idx) => (
+                <li key={idx}>{reasonMap[reason] || reason}</li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-6 pt-2">
+        <div className="flex flex-wrap gap-6">
           {[
             { label: "긴급", value: data.confidence_scores.emergency, color: "bg-red-600" },
             { label: "위험", value: data.confidence_scores.critical, color: "bg-orange-600" },
@@ -241,20 +254,20 @@ export default function DetailedAnalysisPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg p-6 bg-white shadow-sm">
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
         <div className="font-bold text-xl mb-2">대화 목록</div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse border">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border p-2 w-16">순번</th>
-                <th className="border p-2 w-1/2">내용</th>
-                <th className="border p-2 w-16">결과</th>
-                <th className="border p-2 w-16">긴급</th>
-                <th className="border p-2 w-16">위험</th>
-                <th className="border p-2 w-16">주의</th>
-                <th className="border p-2 w-16">안전</th>
-                <th className="border p-2 w-40">시간</th>
+                <th className="border p-1.5 w-8">순번</th>
+                <th className="border p-1.5 w-1/2">내용</th>
+                <th className="border p-1.5 w-16">결과</th>
+                <th className="border p-1.5 w-16">긴급</th>
+                <th className="border p-1.5 w-16">위험</th>
+                <th className="border p-1.5 w-16">주의</th>
+                <th className="border p-1.5 w-16">안전</th>
+                <th className="border p-1.5 w-40">시간</th>
               </tr>
             </thead>
             <tbody>
@@ -269,35 +282,34 @@ export default function DetailedAnalysisPage() {
                 });
                 const resultColor = labelTextColorMap[dlg.label];
                 return (
-                  <tr key={dlg.id} className="bg-white"> {/* 줄 배경 흰색으로 고정 */}
-                    <td className="border p-2 text-center text-black">{i + 1}</td>
-                    <td className="border p-2 text-black">{dlg.text}</td>
-                    <td className="border p-2 text-center font-semibold">
+                  <tr key={dlg.id} className="bg-white">
+                    <td className="border p-1.5 text-center text-black">{i + 1}</td>
+                    <td className="border p-1.5 text-black">{dlg.text}</td>
+                    <td className="border p-1.5 text-center font-semibold">
                       <span className={resultColor}>{labelToKorean[dlg.label] || dlg.label}</span>
                     </td>
-                    <td className="border p-2 text-center text-black">
+                    <td className="border p-1.5 text-center text-black">
                       {(dlg.confidence_scores.emergency * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-2 text-center text-black">
+                    <td className="border p-1.5 text-center text-black">
                       {(dlg.confidence_scores.critical * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-2 text-center text-black">
+                    <td className="border p-1.5 text-center text-black">
                       {(dlg.confidence_scores.danger * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-2 text-center text-black">
+                    <td className="border p-1.5 text-center text-black">
                       {(dlg.confidence_scores.positive * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-2 text-center text-black">{time}</td>
+                    <td className="border p-1.5 text-center text-black">{time}</td>
                   </tr>
                 );
-
               })}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 mt-3">
         <button
           onClick={handleDelete}
           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-bold"

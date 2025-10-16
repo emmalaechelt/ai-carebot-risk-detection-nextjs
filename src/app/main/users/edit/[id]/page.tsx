@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
 import axios from "axios";
 
-// --- 타입 및 상수 정의 (수정됨) ---
+// --- 타입 정의 ---
 interface DaumPostcodeData {
   zonecode: string;
   roadAddress: string;
@@ -18,7 +18,7 @@ interface DaumPostcodeData {
 declare global {
   interface Window {
     daum?: {
-      Postcode: new (config: { oncomplete: (data: DaumPostcodeData) => void }) => void;
+      Postcode: new (config: { oncomplete: (data: DaumPostcodeData) => void }) => { open: () => void };
     };
   }
 }
@@ -26,12 +26,7 @@ declare global {
 const isValidDate = (y: number, m: number, d: number): boolean => {
   const date = new Date(y, m - 1, d);
   const today = new Date();
-  return (
-    date.getFullYear() === y &&
-    date.getMonth() === m - 1 &&
-    date.getDate() === d &&
-    date <= today
-  );
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d && date <= today;
 };
 
 const calculateAge = (birthDate: string): number | null => {
@@ -59,6 +54,8 @@ export default function UserEditPage() {
   const seniorId = params?.id as string;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+
   const [form, setForm] = useState({
     doll_id: "",
     name: "",
@@ -88,13 +85,11 @@ export default function UserEditPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const addressDetailRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
-  // Daum Postcode 스크립트 로딩
+  // Daum Postcode 스크립트 로드
   useEffect(() => {
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
-    const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
-    if (existingScript) {
+    if (document.querySelector(`script[src="${scriptUrl}"]`)) {
       setIsScriptLoaded(true);
       return;
     }
@@ -163,7 +158,7 @@ export default function UserEditPage() {
         monthNum = parseInt(month, 10),
         dayNum = parseInt(day, 10);
       if (isValidDate(yearNum, monthNum, dayNum)) {
-        const fullDate = `${year}-${String(monthNum).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+        const fullDate = `${yearNum}-${String(monthNum).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
         setForm((prev) => ({ ...prev, birth_date: fullDate }));
         setAge(calculateAge(fullDate));
       } else {
@@ -176,7 +171,6 @@ export default function UserEditPage() {
     }
   }, [birth]);
 
-  // 공통 입력 핸들러
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -199,25 +193,35 @@ export default function UserEditPage() {
     setForm((prev) => ({ ...prev, [name]: formatted }));
   };
 
+  // --- [수정됨] 안전한 우편번호 검색 ---
   const handleZipSearch = () => {
-    if (isScriptLoaded && window.daum?.Postcode) {
-      new window.daum.Postcode({
-        oncomplete: (data: DaumPostcodeData) => {
-          setForm((prev) => ({
-            ...prev,
-            zip_code: data.zonecode,
-            address: data.roadAddress,
-            gu: data.sigungu,
-            dong: data.bname,
-          }));
-          addressDetailRef.current?.focus();
-        },
-      }).open();
+    if (!isScriptLoaded || !window.daum?.Postcode) {
+      alert("주소 검색 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+      return;
     }
+
+    const Postcode = window.daum.Postcode as unknown as {
+      new (options: { oncomplete: (data: DaumPostcodeData) => void }): { open: () => void };
+    };
+
+    const postcode = new Postcode({
+      oncomplete: (data: DaumPostcodeData) => {
+        setForm((prev) => ({
+          ...prev,
+          zip_code: data.zonecode || "",
+          address: data.roadAddress || "",
+          gu: data.sigungu || "",
+          dong: data.bname || "",
+        }));
+        addressDetailRef.current?.focus();
+      },
+    });
+
+    postcode.open();
   };
 
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const file = e.target.files[0];
       setPhoto(file);
       if (photoPreview) URL.revokeObjectURL(photoPreview);
@@ -225,7 +229,6 @@ export default function UserEditPage() {
     }
   };
 
-  // --- [수정됨] 에러 상세 처리 포함한 handleSubmit ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting || !seniorId) return;
@@ -250,28 +253,29 @@ export default function UserEditPage() {
     }
 
     setIsSubmitting(true);
-    const seniorPayload = {
-      doll_id: form.doll_id,
-      name: form.name,
-      birth_date: form.birth_date,
-      sex: form.sex,
-      residence: form.residence,
-      phone: form.phone,
-      address: form.address,
-      address_detail: form.address_detail.trim(),
-      gu: form.gu,
-      dong: form.dong,
-      note: form.note,
-      guardian_name: form.guardian_name,
-      guardian_phone: form.guardian_phone,
-      relationship: form.relationship,
-      guardian_note: form.guardian_note,
-      diseases: form.diseases,
-      medications: form.medications,
-      disease_note: form.disease_note,
-    };
 
     try {
+      const seniorPayload = {
+        doll_id: form.doll_id,
+        name: form.name,
+        birth_date: form.birth_date,
+        sex: form.sex,
+        residence: form.residence,
+        phone: form.phone,
+        address: form.address,
+        address_detail: form.address_detail.trim(),
+        gu: form.gu,
+        dong: form.dong,
+        note: form.note,
+        guardian_name: form.guardian_name,
+        guardian_phone: form.guardian_phone,
+        relationship: form.relationship,
+        guardian_note: form.guardian_note,
+        diseases: form.diseases,
+        medications: form.medications,
+        disease_note: form.disease_note,
+      };
+
       const formData = new FormData();
       formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
       if (photo) formData.append("photo", photo);
@@ -285,14 +289,14 @@ export default function UserEditPage() {
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        const serverMsg = err.response?.data?.message;
-
+        const serverMsg = err.response?.data?.error;
         if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n(입력값 확인 필요)\n${serverMsg || ""}`);
         else if (status === 401) alert("인증이 만료되었습니다. 다시 로그인 해주세요.");
         else if (status === 403) alert("수정 권한이 없습니다. 관리자에게 문의하세요.");
         else if (status === 404) alert("이용자 정보를 찾을 수 없습니다.");
         else if (status === 409) alert("이미 등록된 인형 또는 중복된 데이터가 존재합니다.");
         else if (status === 500) alert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        else if (status === 503) alert("서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.");
         else alert(serverMsg || "예상치 못한 오류가 발생했습니다.");
       } else {
         alert("알 수 없는 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");

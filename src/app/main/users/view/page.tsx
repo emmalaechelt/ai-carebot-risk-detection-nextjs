@@ -122,7 +122,7 @@ export default function UsersViewPage() {
       return dong?.dong_name || dongCode;
     }},
     { accessorKey: "state", header: "현재 상태", cell: info => statusMap[info.getValue() as string] || (info.getValue() as string) },
-    { accessorKey: "doll_id", header: "인형ID" },
+    { accessorKey: "doll_id", header: "인형 ID" },
     { accessorKey: "phone", header: "전화번호" },
     { accessorKey: "created_at", header: "등록일", cell: info => new Date(info.getValue() as string).toLocaleDateString() },
   ], [router, pageIndex, pageSize, searchParams.gu]);
@@ -173,7 +173,7 @@ export default function UsersViewPage() {
           </div>
 
           <div className="lg:col-span-4 flex items-center">
-            <label className="w-40 font-medium text-gray-700 pr-2 text-right">휴대폰 번호 or 뒷자리</label>
+            <label className="w-40 font-medium text-gray-700 pr-2 text-right">휴대폰 번호</label>
             <input name="phone" value={searchParams.phone} onChange={handleInputChange} placeholder="'-' 없이 숫자" className="w-full border rounded px-2 py-1" />
           </div>
 
@@ -211,8 +211,8 @@ export default function UsersViewPage() {
           </div>
 
           <div className="lg:col-span-2 flex items-center">
-            <label className="w-28 font-medium text-gray-700 pr-2 text-right">인형ID</label>
-            <input name="doll_id" value={searchParams.doll_id} onChange={handleInputChange} placeholder="인형 아이디" className="w-full border rounded px-2 py-1" />
+            <label className="w-28 font-medium text-gray-700 pr-2 text-right">인형 ID</label>
+            <input name="doll_id" value={searchParams.doll_id} onChange={handleInputChange} placeholder="인형 ID" className="w-full border rounded px-2 py-1" />
           </div>
         </div>
 

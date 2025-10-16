@@ -150,7 +150,7 @@ export default function AnalysisPage() {
         </button>
       )
     },
-    { accessorKey: "timestamp", header: "분석일시", cell: (info) => new Date(info.getValue() as string).toLocaleString("ko-KR") },
+    { accessorKey: "timestamp", header: "분석 일시", cell: (info) => new Date(info.getValue() as string).toLocaleString("ko-KR") },
   ], [router]);
 
   const table = useReactTable({
@@ -243,11 +243,11 @@ export default function AnalysisPage() {
   return (
     <div className="p-4 space-y-4 text-black">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-center flex-1">전체 분석결과</h2>
+        <h2 className="text-3xl font-bold text-center flex-1">전체 분석 결과</h2>
         <button
           onClick={handleExcelDownload}
           disabled={isDownloading}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-bold text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {isDownloading ? "다운로드 중..." : "엑셀 다운로드"}
         </button>

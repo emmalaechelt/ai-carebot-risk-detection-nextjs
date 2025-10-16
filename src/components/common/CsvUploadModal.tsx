@@ -70,25 +70,37 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
       } else {
         setError("분석 요청은 성공했으나, 결과 ID를 가져오지 못했습니다.");
       }
-    } catch (err) {
-      const axiosError = err as AxiosError;
-      const status = axiosError.response?.status;
-      const serverMsg = axiosError.response?.data?.message;
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        const status = err.response?.status;
+        let serverMsg: string | undefined;
+        if (err.response?.data && typeof err.response.data === "object") {
+          const data = err.response.data as { error?: string };
+          serverMsg = data.error;
+        }
 
-      if (status === 400)
-        setError(`요청 형식이 올바르지 않습니다.\n(입력값 확인 필요)\n${serverMsg || ""}`);
-      else if (status === 401)
-        setError("인증이 만료되었습니다. 다시 로그인 해주세요.");
-      else if (status === 403)
-        setError("수정 권한이 없습니다. 관리자에게 문의하세요.");
-      else if (status === 404)
-        setError("이용자 정보를 찾을 수 없습니다.");
-      else if (status === 409)
-        setError("이미 등록된 인형 또는 중복된 데이터가 존재합니다.");
-      else if (status === 500)
-        setError("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-      else
-        setError(serverMsg || "예상치 못한 오류가 발생했습니다.");
+        if (status === 400) {
+          setError(`CSV 파일 형식이 잘못되었거나 비어 있습니다.\n${serverMsg || ""}`);
+        } else if (status === 401) {
+          setError("인증이 만료되었습니다. 다시 로그인 해주세요.");
+        } else if (status === 403) {
+          setError("해당 기능을 사용할 권한이 없습니다. 관리자에게 문의하세요.");
+        } else if (status === 404) {
+          setError(
+            "분석 대상 인형 ID가 없거나, 해당 인형에 시니어가 할당되지 않았습니다. CSV 파일의 doll_id를 확인해주세요."
+          );
+        } else if (status === 409) {
+          setError("이미 등록된 인형 또는 중복된 데이터가 존재합니다. CSV 내용을 확인해주세요.");
+        } else if (status === 500) {
+          setError("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        } else if (status === 503) {
+          setError("분석 서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        } else {
+          setError(serverMsg || "알 수 없는 오류가 발생했습니다. 파일 형식을 확인해주세요.");
+        }
+      } else {
+        setError("알 수 없는 오류가 발생했습니다. 파일 형식을 확인해주세요.");
+      }
     } finally {
       setIsUploading(false);
     }
@@ -157,7 +169,9 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             onClick={onClose}
             disabled={isUploading}
             className={`px-4 py-2 rounded text-base ${
-              isUploading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-gray-300 text-black hover:bg-gray-400"
+              isUploading
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-gray-300 text-black hover:bg-gray-400"
             }`}
           >
             취소
@@ -167,7 +181,9 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             onClick={handleSubmit}
             disabled={isUploading || !file}
             className={`px-4 py-2 rounded text-base ${
-              isUploading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+              isUploading
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-500 text-white hover:bg-blue-600"
             }`}
           >
             {isUploading ? "분석 중..." : "분석 요청"}
