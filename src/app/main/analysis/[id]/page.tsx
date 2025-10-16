@@ -107,7 +107,8 @@ export default function DetailedAnalysisPage() {
 
     try {
       const wb = XLSX.utils.book_new();
-      const rows: any[][] = [];
+      // 명확한 타입으로 변경: 문자열과 숫자만 들어가는 2차원 배열
+      const rows: (string | number)[][] = [];
 
       // 기본 정보
       rows.push(["분석 대상자 정보"]);

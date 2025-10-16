@@ -243,7 +243,7 @@ export default function AnalysisPage() {
   return (
     <div className="p-4 space-y-4 text-black">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-center flex-1">전체 분석 결과</h2>
+        <h2 className="text-2xl font-bold text-center flex-1">전체 분석 결과</h2>
         <button
           onClick={handleExcelDownload}
           disabled={isDownloading}
