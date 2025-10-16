@@ -144,7 +144,7 @@ export default function AnalysisPage() {
       accessorKey: "summary", header: "요약", cell: ({ row }) => (
         <button
           onClick={() => router.push(`/main/analysis/${row.original.overall_result_id}`)}
-          className="text-blue-600 hover:underline text-left"
+          className="text-blue-600 hover:underline text-left cursor-pointer"
         >
           {row.original.summary}
         </button>
@@ -233,7 +233,7 @@ export default function AnalysisPage() {
       <button
         key={number}
         onClick={() => table.setPageIndex(number - 1)}
-        className={`px-2 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === number ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"}`}
+        className={`px-2 py-1 rounded-md text-sm font-medium transition-colors cursor-pointer ${currentPage === number ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"}`}
       >
         {number}
       </button>
@@ -247,7 +247,7 @@ export default function AnalysisPage() {
         <button
           onClick={handleExcelDownload}
           disabled={isDownloading}
-          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {isDownloading ? "다운로드 중..." : "엑셀 다운로드"}
         </button>
@@ -320,8 +320,8 @@ export default function AnalysisPage() {
         </div>
 
         <div className="flex justify-center space-x-3">
-          <button onClick={handleSearch} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold text-sm">검색</button>
-          <button onClick={handleReset} className="bg-gray-300 text-black px-4 py-2 rounded-lg hover:bg-gray-400 font-semibold text-sm">초기화</button>
+          <button onClick={handleSearch} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold text-sm cursor-pointer">검색</button>
+          <button onClick={handleReset} className="bg-gray-300 text-black px-4 py-2 rounded-lg hover:bg-gray-400 font-semibold text-sm cursor-pointer">초기화</button>
         </div>
       </div>
 
@@ -370,11 +370,11 @@ export default function AnalysisPage() {
         </div>
 
         <div className="flex items-center justify-center gap-2 mt-4 text-sm">
-          <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}>{'<<'}</button>
-          <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}>{'<'}</button>
+          <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}>{'<<'}</button>
+          <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}>{'<'}</button>
           <div className="flex gap-2 min-w-[200px] justify-between">{renderPageNumbers()}</div>
-          <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}>{'>'}</button>
-          <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}>{'>>'}</button>
+          <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}>{'>'}</button>
+          <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}>{'>>'}</button>
         </div>
       </div>
     </div>

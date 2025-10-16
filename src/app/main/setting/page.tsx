@@ -90,7 +90,11 @@ export default function SettingPage() {
                     <button
                       onClick={() => handleDelete(member.username)}
                       disabled={member.username === currentUser?.username}
-                      className="font-medium text-red-600 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+                      className={`px-2 py-1 rounded text-xs ${
+                        member.username === currentUser?.username
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
+                      }`}
                     >
                       삭제
                     </button>

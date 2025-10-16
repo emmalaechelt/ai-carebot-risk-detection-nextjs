@@ -533,15 +533,15 @@ export default function UserDetailPage() {
               <button
                 type="button"
                 onClick={() => router.push(`/main/users/edit/${id}`)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
               >
                 수정
               </button>
 
-              <button type="button" onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              <button type="button" onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer">
                 삭제
               </button>
-              <button type="button" onClick={() => router.push("/main/users/view")} className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300">
+              <button type="button" onClick={() => router.push("/main/users/view")} className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 cursor-pointer">
                 목록으로
               </button>
             </>

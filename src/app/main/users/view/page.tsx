@@ -150,7 +150,7 @@ export default function UsersViewPage() {
       {/* 검색창 */}
       <div className="bg-white p-3 rounded-lg shadow-sm space-y-2">
         <div className="flex justify-end">
-          <button onClick={handleRegister} className="bg-green-500 text-white px-4 py-1.5 rounded-lg hover:bg-green-600 font-semibold text-sm">등록</button>
+          <button onClick={handleRegister} className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm cursor-pointer">등록</button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-x-6 gap-y-3 items-center text-sm">
@@ -217,8 +217,8 @@ export default function UsersViewPage() {
         </div>
 
         <div className="flex justify-center gap-2 pt-1">
-          <button onClick={handleSearch} className="bg-blue-500 text-white px-6 py-1.5 rounded-lg hover:bg-blue-600 font-semibold text-sm">검색</button>
-          <button onClick={handleReset} className="bg-gray-300 text-black px-6 py-1.5 rounded-lg hover:bg-gray-400 font-semibold text-sm">초기화</button>
+          <button onClick={handleSearch} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold text-sm cursor-pointer">검색</button>
+          <button onClick={handleReset} className="bg-gray-300 text-black px-4 py-2 rounded-lg hover:bg-gray-400 font-semibold text-sm cursor-pointer">초기화</button>
         </div>
       </div>
 
@@ -248,15 +248,15 @@ export default function UsersViewPage() {
         </div>
 
         {/* 페이지네이션 */}
-        <div className="flex justify-center items-center mt-2 space-x-2 text-sm">
-          <button onClick={()=>table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100">{'<<'}</button>
-          <button onClick={()=>table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100">{'<'}</button>
+        <div className="flex justify-center items-center mt-2 space-x-2 text-sm cursor-pointer">
+          <button onClick={()=>table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer">{'<<'}</button>
+          <button onClick={()=>table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer">{'<'}</button>
           {Array.from({length: Math.min(5,pageCount-Math.floor(pageIndex/5)*5)},(_,i)=>{
             const pn = Math.floor(pageIndex/5)*5 + i;
-            if(pn<pageCount) return <button key={pn} onClick={()=>table.setPageIndex(pn)} className={`px-3 py-1 rounded-md ${pn===pageIndex?'bg-blue-500 text-white font-bold':'text-black hover:underline'}`}>{pn+1}</button>
+            if(pn<pageCount) return <button key={pn} onClick={()=>table.setPageIndex(pn)} className={`px-3 py-1 rounded-md ${pn===pageIndex?'bg-blue-500 text-white font-bold':'text-black hover:underline'} cursor-pointer`}>{pn+1}</button>
           })}
-          <button onClick={()=>table.nextPage()} disabled={!table.getCanNextPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100">{'>'}</button>
-          <button onClick={()=>table.setPageIndex(pageCount-1)} disabled={!table.getCanNextPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100">{'>>'}</button>
+          <button onClick={()=>table.nextPage()} disabled={!table.getCanNextPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer">{'>'}</button>
+          <button onClick={()=>table.setPageIndex(pageCount-1)} disabled={!table.getCanNextPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer">{'>>'}</button>
         </div>
       </div>
     </div>

@@ -189,7 +189,7 @@ export default function DetailedAnalysisPage() {
         <button
           onClick={handleExcelDownload}
           disabled={downloading}
-          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {downloading ? "다운로드 중..." : "엑셀 다운로드"}
         </button>
@@ -312,13 +312,13 @@ export default function DetailedAnalysisPage() {
       <div className="flex justify-center gap-4 mt-3">
         <button
           onClick={handleDelete}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-bold"
+          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-bold cursor-pointer"
         >
           삭제
         </button>
         <button
           onClick={() => router.back()}
-          className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 transition font-bold"
+          className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 transition font-bold cursor-pointer"
         >
           목록으로
         </button>

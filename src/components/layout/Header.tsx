@@ -29,14 +29,14 @@ export default function Header({ username }: HeaderProps) {
       <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-600 transition text-sm"
+          className="bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-600 transition text-sm cursor-pointer"
         >
           CSV 분석 요청
         </button>
         <div ref={dropdownRef} className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-2 border border-gray-300 rounded-lg px-3 py-2 font-medium text-black hover:bg-gray-50 transition"
+            className="flex items-center space-x-2 border border-gray-300 rounded-lg px-3 py-2 font-medium text-black hover:bg-gray-50 transition cursor-pointer"
           >
             <span>👮</span>
             <span>{username}</span>
@@ -51,7 +51,7 @@ export default function Header({ username }: HeaderProps) {
           >
             <button
               onClick={logout}
-              className="block w-full text-center px-4 py-2 text-sm text-red-600 hover:bg-gray-50 rounded-lg font-medium"
+              className="block w-full text-center px-4 py-2 text-sm text-red-600 hover:bg-gray-50 rounded-lg font-medium cursor-pointer"
             >
               로그아웃
             </button>

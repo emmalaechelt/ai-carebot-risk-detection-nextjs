@@ -138,7 +138,7 @@ export default function DollsPage() {
           onClick={() => handleDelete(info.row.original.id)}
           disabled={actionLoading}
           className={`px-2 py-1 rounded text-xs ${
-            actionLoading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-red-500 text-white hover:bg-red-600"
+            actionLoading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
           }`}
         >
           삭제
@@ -184,7 +184,7 @@ export default function DollsPage() {
       <button
         key={number}
         onClick={() => table.setPageIndex(number - 1)}
-        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors cursor-pointer ${
           currentPage === number
             ? "bg-blue-600 text-white"
             : "bg-white text-gray-700 hover:bg-gray-100"
@@ -207,7 +207,7 @@ export default function DollsPage() {
           <button
             onClick={() => setIsModalOpen(true)}
             disabled={actionLoading}
-            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 text-sm font-semibold"
+            className="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-bold text-sm cursor-pointer"
           >
             등록
           </button>
@@ -262,14 +262,14 @@ export default function DollsPage() {
           <button
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}
           >
             {"<<"}
           </button>
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}
           >
             {"<"}
           </button>
@@ -279,14 +279,14 @@ export default function DollsPage() {
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}
           >
             {">"}
           </button>
           <button
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
-            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}
+            className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}
           >
             {">>"}
           </button>

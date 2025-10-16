@@ -335,7 +335,7 @@ export default function UserRegisterPage() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
-                        <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap disabled:bg-gray-400">
+                        <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 whitespace-nowrap disabled:bg-gray-400 cursor-pointer">
                           {isScriptLoaded ? "우편번호 검색" : "로딩 중"}
                         </button>
                         <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
@@ -440,8 +440,8 @@ export default function UserRegisterPage() {
         </section>
         
         <div className="flex justify-center pt-2">
-            <button type="submit" disabled={isSubmitting} className="px-8 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
-              {isSubmitting ? "저장 중..." : "저장"}
+            <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 cursor-pointer">
+              저장
             </button>
         </div>
       </form>
