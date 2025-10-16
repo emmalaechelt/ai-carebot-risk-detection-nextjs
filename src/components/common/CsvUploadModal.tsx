@@ -94,7 +94,7 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
         } else if (status === 500) {
           setError("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         } else if (status === 503) {
-          setError("분석 서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          setError("서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.");
         } else {
           setError(serverMsg || "알 수 없는 오류가 발생했습니다. 파일 형식을 확인해주세요.");
         }
