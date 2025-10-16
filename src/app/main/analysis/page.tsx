@@ -132,7 +132,7 @@ export default function AnalysisPage() {
 
   const columns = useMemo<ColumnDef<AnalysisResultView>[]>(() => [
     { id: "index", header: () => <div className="text-center">순번</div>, cell: (info) => info.row.index + 1 },
-    { accessorKey: "doll_id", header: () => <div className="text-center">인형ID</div> },
+    { accessorKey: "doll_id", header: () => <div className="text-center">인형 ID</div> },
     { accessorKey: "senior_id", header: () => <div className="text-center">이용자 번호</div> },
     { accessorKey: "name", header: () => <div className="text-center">이름</div> },
     { accessorKey: "age", header: () => <div className="text-center">나이</div> },
@@ -190,7 +190,7 @@ export default function AnalysisPage() {
 
       const excelData = allData.map((item, index) => ({
         순번: index + 1,
-        "인형ID": item.doll_id,
+        "인형 ID": item.doll_id,
         "이용자 번호": item.senior_id,
         이름: item.name,
         나이: item.age,
@@ -304,8 +304,8 @@ export default function AnalysisPage() {
             <input name="name" placeholder="이름" value={searchParams.name} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
           </div>
           <div className="flex items-center">
-            <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">인형ID</label>
-            <input name="doll_id" placeholder="인형ID" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">인형 ID</label>
+            <input name="doll_id" placeholder="인형 ID" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">이용자 번호</label>

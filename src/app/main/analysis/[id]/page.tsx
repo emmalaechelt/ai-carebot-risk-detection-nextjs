@@ -199,9 +199,8 @@ export default function DetailedAnalysisPage() {
       <div className="border rounded-lg p-6 bg-white shadow-sm space-y-4">
         <div className="flex items-center">
           <div
-            className={`inline-block text-xl font-bold px-2 py-1 rounded ${
-              labelColorMap[data.label] || "bg-gray-300"
-            } text-white`}
+            className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${labelColorMap[data.label] || "bg-gray-300"
+              } text-white`}
           >
             분석 결과: {labelToKorean[data.label] || data.label}
           </div>
@@ -270,13 +269,11 @@ export default function DetailedAnalysisPage() {
                 });
                 const resultColor = labelTextColorMap[dlg.label];
                 return (
-                  <tr key={dlg.id}>
+                  <tr key={dlg.id} className="bg-white"> {/* 줄 배경 흰색으로 고정 */}
                     <td className="border p-2 text-center text-black">{i + 1}</td>
                     <td className="border p-2 text-black">{dlg.text}</td>
-                    <td
-                      className={`border p-2 text-center font-semibold ${resultColor}`}
-                    >
-                      {labelToKorean[dlg.label] || dlg.label}
+                    <td className="border p-2 text-center font-semibold">
+                      <span className={resultColor}>{labelToKorean[dlg.label] || dlg.label}</span>
                     </td>
                     <td className="border p-2 text-center text-black">
                       {(dlg.confidence_scores.emergency * 100).toFixed(1)}%
@@ -293,6 +290,7 @@ export default function DetailedAnalysisPage() {
                     <td className="border p-2 text-center text-black">{time}</td>
                   </tr>
                 );
+
               })}
             </tbody>
           </table>
@@ -302,13 +300,13 @@ export default function DetailedAnalysisPage() {
       <div className="flex justify-center gap-4">
         <button
           onClick={handleDelete}
-          className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition font-bold"
+          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-bold"
         >
           삭제
         </button>
         <button
           onClick={() => router.back()}
-          className="bg-gray-100 px-6 py-2 rounded-lg hover:bg-gray-200 transition font-bold"
+          className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 transition font-bold"
         >
           목록으로
         </button>

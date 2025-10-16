@@ -459,10 +459,10 @@ export default function UserEditPage() {
         </section>
 
         <div className="flex justify-center pt-2 gap-4">
-          <button type="submit" disabled={isSubmitting} className="px-8 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+          <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
             {isSubmitting ? "저장 중..." : "저장"}
           </button>
-          <button type="button" onClick={() => router.push(`/main/users/view/${seniorId}`)} className="px-8 py-2 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600">
+          <button type="button" onClick={() => router.push(`/main/users/view/${seniorId}`)} className="px-4 py-2 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600">
             취소
           </button>
         </div>
