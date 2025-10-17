@@ -214,7 +214,7 @@ export default function AnalysisPage() {
     }
   };
 
-  const renderPageNumbers = () => {
+    const renderPageNumbers = () => {
     const totalPages = table.getPageCount();
     const currentPage = pageIndex + 1;
     const pageNumbers = [];
@@ -241,45 +241,48 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div className="p-4 space-y-4 text-black">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-center flex-1">전체 분석 결과</h2>
-        <button
-          onClick={handleExcelDownload}
-          disabled={isDownloading}
-          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isDownloading ? "다운로드 중..." : "엑셀 다운로드"}
-        </button>
+    <div className="p-4 space-y-2 text-black">
+      <div className="mb-2">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">전체 분석 결과</h2>
+        </div>
       </div>
-
       {/* 검색 영역 */}
-      <div className="bg-white p-4 rounded-lg shadow-md space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-3 items-center text-sm">
+      <div className="bg-white p-3 rounded-lg shadow-md space-y-3">
+        <div className="flex justify-end">
+          <button
+            onClick={handleExcelDownload}
+            disabled={isDownloading}
+            className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 font-bold text-sm cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            엑셀 다운로드
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y- items-center text-sm">
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">자치구</label>
-            <select name="gu" value={searchParams.gu} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5 bg-white">
+            <select name="gu" value={searchParams.gu} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               {administrativeDistricts.map(g => <option key={g.gu_code} value={g.gu_code}>{g.gu_name}</option>)}
             </select>
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">법정동</label>
-            <select name="dong" value={searchParams.dong} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5 bg-white" disabled={!searchParams.gu}>
+            <select name="dong" value={searchParams.dong} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white" disabled={!searchParams.gu}>
               <option value="">전체</option>
               {availableDongs.map(d => <option key={d.dong_code} value={d.dong_code}>{d.dong_name}</option>)}
             </select>
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">분석 결과</label>
-            <select name="label" value={searchParams.label} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5 bg-white">
+            <select name="label" value={searchParams.label} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               {labelApiKeys.map(key => <option key={key} value={key}>{labelMap[key]}</option>)}
             </select>
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">연령대</label>
-            <select name="age_group" value={searchParams.age_group} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5 bg-white">
+            <select name="age_group" value={searchParams.age_group} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               <option value="60">60대</option>
               <option value="70">70대</option>
@@ -290,7 +293,7 @@ export default function AnalysisPage() {
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">성별</label>
-            <select name="sex" value={searchParams.sex} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5 bg-white">
+            <select name="sex" value={searchParams.sex} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               <option value="MALE">남성</option>
               <option value="FEMALE">여성</option>
@@ -301,21 +304,21 @@ export default function AnalysisPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-3 items-center text-sm">
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">이름</label>
-            <input name="name" placeholder="이름" value={searchParams.name} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <input name="name" placeholder="이름" value={searchParams.name} onChange={handleInputChange} className="w-full border rounded px-2 h-8" />
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">인형 ID</label>
-            <input name="doll_id" placeholder="인형 ID" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <input name="doll_id" placeholder="인형 ID" value={searchParams.doll_id} onChange={handleInputChange} className="w-full border rounded px-2 h-8" />
           </div>
           <div className="flex items-center">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">이용자 번호</label>
-            <input name="senior_id" placeholder="번호" value={searchParams.senior_id} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <input name="senior_id" placeholder="번호" value={searchParams.senior_id} onChange={handleInputChange} className="w-full border rounded px-2 h-8" />
           </div>
           <div className="flex items-center col-span-1 md:col-span-2">
             <label className="w-20 shrink-0 font-semibold text-gray-700 text-right pr-2">분석일</label>
-            <input type="date" name="start_date" value={searchParams.start_date} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <input type="date" name="start_date" value={searchParams.start_date} onChange={handleInputChange} className="w-full border rounded px-2 h-8" />
             <span className="mx-2">~</span>
-            <input type="date" name="end_date" value={searchParams.end_date} onChange={handleInputChange} className="w-full border rounded px-2 py-1.5" />
+            <input type="date" name="end_date" value={searchParams.end_date} onChange={handleInputChange} className="w-full border rounded px-2 h-8" />
           </div>
         </div>
 
@@ -328,14 +331,14 @@ export default function AnalysisPage() {
       {/* 결과 테이블 */}
       <div className="bg-white p-4 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-3">
-          <span className="font-semibold">검색 결과: 총 {totalElements} 건</span>
+          <span className="font-semibold">검색 결과 : 총 {totalElements}건</span>
           <select value={table.getState().pagination.pageSize} onChange={e => table.setPageSize(Number(e.target.value))} className="border rounded px-2 py-1 bg-white text-sm">
             {[10, 20, 30, 40, 50].map(size => <option key={size} value={size}>{size}개씩 보기</option>)}
           </select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-gray-600">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+            <thead className="text-sm text-gray-700 uppercase bg-gray-100">
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => (

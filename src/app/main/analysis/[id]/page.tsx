@@ -210,7 +210,7 @@ export default function DetailedAnalysisPage() {
             className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${labelColorMap[data.label] || "bg-gray-300"
               } text-white`}
           >
-            분석 결과: {labelToKorean[data.label] || data.label}
+            분석 결과 : {labelToKorean[data.label] || data.label}
           </div>
         </div>
 

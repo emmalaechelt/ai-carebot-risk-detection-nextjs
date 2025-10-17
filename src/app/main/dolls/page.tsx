@@ -196,13 +196,13 @@ export default function DollsPage() {
   };
 
   return (
-    <div className="p-4 text-black space-y-4">
+    <div className="p-4 text-black space-y-2">
       <h2 className="text-2xl font-bold text-center">인형 관리</h2>
 
-      <div className="bg-white rounded-lg shadow-sm p-4 space-y-3">
+      <div className="bg-white rounded-lg shadow-sm p-3 space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">
-            총 <strong>{totalElements}</strong> 명
+          <span className="text-base text-gray-600">
+            총 <strong>{totalElements}</strong>명
           </span>
           <button
             onClick={() => setIsModalOpen(true)}

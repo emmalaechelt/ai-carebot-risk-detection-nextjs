@@ -24,8 +24,8 @@ export default function Sidebar() {
   const menuItems: MenuItem[] = [
     { label: "전체 현황", icon: "🕧", href: "/main" },
     { label: "이용자 관리", icon: "👨‍👩‍👧‍👦", href: "/main/users/view" },
-    { label: "전체 분석결과", icon: "📋", href: "/main/analysis" },
     { label: "인형 관리", icon: "🧸", href: "/main/dolls" }, 
+    { label: "전체 분석 결과", icon: "📋", href: "/main/analysis" },
     { label: "설정", icon: "⚙", href: "/main/setting" },
   ];
 

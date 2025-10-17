@@ -156,7 +156,7 @@ export default function UsersViewPage() {
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-x-6 gap-y-3 items-center text-sm">
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">현재 상태</label>
-            <select name="state" value={searchParams.state} onChange={handleInputChange} className="w-full border rounded px-2 py-1 bg-white">
+            <select name="state" value={searchParams.state} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               {statusApiKeys.map(k => <option key={k} value={k}>{statusMap[k]}</option>)}
             </select>
@@ -164,22 +164,22 @@ export default function UsersViewPage() {
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">이용자 번호</label>
-            <input name="senior_id" value={searchParams.senior_id} onChange={handleInputChange} placeholder="번호" className="w-full border rounded px-2 py-1" />
+            <input name="senior_id" value={searchParams.senior_id} onChange={handleInputChange} placeholder="번호" className="w-full border rounded px-2 h-8" />
           </div>
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">이름</label>
-            <input name="name" value={searchParams.name} onChange={handleInputChange} placeholder="이름" className="w-full border rounded px-2 py-1" />
+            <input name="name" value={searchParams.name} onChange={handleInputChange} placeholder="이름" className="w-full border rounded px-2 h-8" />
           </div>
 
           <div className="lg:col-span-4 flex items-center">
             <label className="w-40 font-medium text-gray-700 pr-2 text-right">휴대폰 번호</label>
-            <input name="phone" value={searchParams.phone} onChange={handleInputChange} placeholder="'-' 없이 숫자" className="w-full border rounded px-2 py-1" />
+            <input name="phone" value={searchParams.phone} onChange={handleInputChange} placeholder="'-' 없이 숫자" className="w-full border rounded px-2 h-8" />
           </div>
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">연령대</label>
-            <select name="age_group" value={searchParams.age_group} onChange={handleInputChange} className="w-full border rounded px-2 py-1 bg-white">
+            <select name="age_group" value={searchParams.age_group} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               {[60,70,80,90,100].map(a => <option key={a} value={a}>{a===100?'100세 이상':`${a}대`}</option>)}
             </select>
@@ -187,7 +187,7 @@ export default function UsersViewPage() {
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">성별</label>
-            <select name="sex" value={searchParams.sex} onChange={handleInputChange} className="w-full border rounded px-2 py-1 bg-white">
+            <select name="sex" value={searchParams.sex} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               <option value="MALE">남</option>
               <option value="FEMALE">여</option>
@@ -196,7 +196,7 @@ export default function UsersViewPage() {
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">자치구</label>
-            <select name="gu" value={searchParams.gu} onChange={handleInputChange} className="w-full border rounded px-2 py-1 bg-white">
+            <select name="gu" value={searchParams.gu} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white">
               <option value="">전체</option>
               {Object.keys(guOptions).map(g => <option key={g} value={g}>{g}</option>)}
             </select>
@@ -204,7 +204,7 @@ export default function UsersViewPage() {
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">법정동</label>
-            <select name="dong" value={searchParams.dong} onChange={handleInputChange} className="w-full border rounded px-2 py-1 bg-white" disabled={!searchParams.gu}>
+            <select name="dong" value={searchParams.dong} onChange={handleInputChange} className="w-full border rounded px-2 h-8 bg-white" disabled={!searchParams.gu}>
               <option value="">전체</option>
               {availableDongs.map(d => <option key={d.dong_code} value={d.dong_code}>{d.dong_name}</option>)}
             </select>
@@ -212,7 +212,7 @@ export default function UsersViewPage() {
 
           <div className="lg:col-span-2 flex items-center">
             <label className="w-28 font-medium text-gray-700 pr-2 text-right">인형 ID</label>
-            <input name="doll_id" value={searchParams.doll_id} onChange={handleInputChange} placeholder="인형 ID" className="w-full border rounded px-2 py-1" />
+            <input name="doll_id" value={searchParams.doll_id} onChange={handleInputChange} placeholder="인형 ID" className="w-full border rounded px-2 h-8" />
           </div>
         </div>
 
@@ -224,9 +224,9 @@ export default function UsersViewPage() {
 
       {/* 테이블 */}
       <div className="bg-white rounded-lg shadow-sm p-3">
-        <div className="flex justify-between items-center text-xs pb-1">
-          <span>총 <strong>{totalElements}</strong> 명</span>
-          <select value={table.getState().pagination.pageSize} onChange={e => table.setPageSize(Number(e.target.value))} className="border rounded px-1 py-0.5 bg-white">
+        <div className="flex justify-between items-center text-base mb-3">
+          <span>총 <strong>{totalElements}</strong>명</span>
+          <select value={table.getState().pagination.pageSize} onChange={e => table.setPageSize(Number(e.target.value))} className="border rounded px-2 py-1 bg-white text-sm">
             {[10,20,30,50].map(s => <option key={s} value={s}>{s}개씩 보기</option>)}
           </select>
         </div>

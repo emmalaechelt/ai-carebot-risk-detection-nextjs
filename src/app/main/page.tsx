@@ -8,7 +8,7 @@ import Link from "next/link";
 // ✨ 스켈레톤 컴포넌트
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       <div className="border rounded-lg p-4 bg-white shadow-sm">
         <div className="h-6 w-32 mx-auto bg-gray-200 rounded animate-pulse-slow mb-4"></div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
@@ -111,12 +111,12 @@ export default function DashboardPage() {
   const displayResults = getDisplayResults();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* 전체 현황 */}
       <div className="border rounded-lg p-4 bg-white shadow-sm">
         <h2 className="text-2xl font-bold mb-4 text-center text-black">전체 현황</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-          <div>
+          <div className="border rounded-lg bg-gray-100 p-2">
             <div className="text-gray-700">총 이용자</div>
             <div className="text-2xl font-bold text-black">{data.state_count.total}명</div>
           </div>
