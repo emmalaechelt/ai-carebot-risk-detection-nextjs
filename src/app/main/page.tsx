@@ -146,7 +146,7 @@ export default function DashboardPage() {
                     className={`relative flex flex-col px-3 py-2 mb-2 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${risk.className}`}
                   >
                     {/* 첫 줄: 이모지 + 이름 + 성별/나이 + 주소 + 시간 */}
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                    <div className="flex flex-wrap items-center gap-2 text-base text-gray-700">
                       <span>👤</span>
                       <span className="font-semibold text-black">{item.senior_name}</span>
                       <span>({item.sex === "MALE" ? "남" : "여"}/{item.age}세)</span>
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                       <span>⏱ {new Date(item.timestamp).toLocaleString("ko-KR")}</span>
                     </div>
                     {/* 둘째 줄: 요약 */}
-                    <div className="mt-1 text-base text-gray-700">{item.summary}</div>
+                    <div className="mt-1 text-lg text-gray-700">{item.summary}</div>
                     {/* 오른쪽 상단 배지 */}
                     {risk.label && (
                       <span
