@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "../../lib/api";
-import { DashboardData } from "../../types/index";
+import api from "@/lib/api";
+import { DashboardData, UrgentResult } from "@/types/index";
 import Link from "next/link";
 
 // ✨ 스켈레톤 컴포넌트
@@ -74,10 +74,10 @@ export default function DashboardPage() {
 
   // 이름 기준으로 중복 제거 + 긴급 우선 + 요약 합치기 + 최근 시간 기준 정렬
   const getDisplayResults = () => {
-    const map = new Map<string, { label: string; summary: string; latest: any }>();
+    const map = new Map<string, { label: string; summary: string; latest: UrgentResult }>();
 
     data.recent_urgent_results.forEach((item) => {
-      const key = item.senior_name; // 이름 기준
+      const key = item.senior_name;
 
       if (!map.has(key)) {
         map.set(key, { label: item.label, summary: item.summary, latest: item });
@@ -105,7 +105,7 @@ export default function DashboardPage() {
     return Array.from(map.values())
       .map((v) => ({ ...v.latest, label: v.label, summary: v.summary }))
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 10); // 최대 10건
+      .slice(0, 10);
   };
 
   const displayResults = getDisplayResults();

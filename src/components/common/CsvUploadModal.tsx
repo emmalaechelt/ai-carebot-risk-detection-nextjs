@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, ChangeEvent, DragEvent } from "react";
-import api from "../../lib/api";
+import api from "@/lib/api";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 // import { addNotification } from "@/lib/notification";  // 알림 추가 유틸 임포트

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext";
-import NotificationBell from "../../components/common/NotificationBell";
+import { useAuth } from "@/contexts/AuthContext";
+import NotificationBell from "@/components/common/NotificationBell";
 
 interface HeaderProps {
   username: string;

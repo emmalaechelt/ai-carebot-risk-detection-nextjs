@@ -1,5 +1,5 @@
 import axios from "axios";
-import { DollListView, PagedResponse } from "../types/index";
+import { DollListView, PagedResponse } from "@/types/index";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,

@@ -9,8 +9,8 @@ import {
   ColumnDef,
   PaginationState,
 } from "@tanstack/react-table";
-import { dollApi } from "../../../lib/api";
-import { DollListView, PagedResponse } from "../../../types/index";
+import { dollApi } from "@/lib/api";
+import { DollListView, PagedResponse } from "@/types/index";
 import { AxiosError } from "axios";
 
 export default function DollsPage() {
