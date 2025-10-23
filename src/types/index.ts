@@ -24,7 +24,7 @@ export type SeniorSex = "MALE" | "FEMALE";
 export enum Residence {
   SINGLE_FAMILY_HOME = '단독주택',
   MULTIPLEX_HOUSING = '다세대주택',
-  OFFICETEL = '오피스텔',
+  MULTI_FAMILY_HOUSING = '다가구주택',
   APARTMENT = '아파트',
 }
 
@@ -70,19 +70,18 @@ export interface SeniorListView {
   created_at: string; // "YYYY-MM-DDTHH:mm:ss"
 }
 
-// --- 분석 결과 ---
-export interface OverallResult {
+// --- 긴급 분석 결과 ---
+export interface UrgentResult {
   overall_result_id: number;
   label: SeniorState;
-  summary: string;
-  timestamp: string;
-  doll_id: string;
-  senior_id: number;
-  name: string;
+  senior_name: string; // 'name' 대신 'senior_name' 사용
   age: number;
   sex: SeniorSex;
   gu: string;
   dong: string;
+  summary: string;
+  treatment_plan: string; // treatment_plan 필드 추가
+  timestamp: string;
 }
 
 // --- 대시보드 ---
@@ -94,9 +93,10 @@ export interface DashboardData {
     critical: number;
     emergency: number;
   };
-  recent_urgent_results: OverallResult[];
+  recent_urgent_results: UrgentResult[];
 }
 
+// --- 인형 목록 조회용 축약 정보 ---
 export interface DollListView {
   id: string;              // 인형의 고유 ID
   senior_id: number | null; // 할당된 시니어 ID (없으면 null)

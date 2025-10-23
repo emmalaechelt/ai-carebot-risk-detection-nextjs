@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, ReactNode } from "react";
+import CsvUploadModal from "../../components/common/CsvUploadModal";
 
 interface MenuItem {
   label: string;
@@ -15,16 +16,16 @@ interface MenuItem {
 export default function Sidebar() {
   const pathname = usePathname();
   const [openSubMenus, setOpenSubMenus] = useState<{ [key: string]: boolean }>({});
+  const [isModalOpen, setIsModalOpen] = useState(false); // CSV 모달 상태
 
   const toggleSubMenu = (label: string) => {
     setOpenSubMenus(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
-  // [수정] menuItems 배열에 '인형 관리' 추가
   const menuItems: MenuItem[] = [
     { label: "전체 현황", icon: "🕧", href: "/main" },
     { label: "이용자 관리", icon: "👨‍👩‍👧‍👦", href: "/main/users/view" },
-    { label: "인형 관리", icon: "🧸", href: "/main/dolls" }, 
+    { label: "인형 관리", icon: "🧸", href: "/main/dolls" },
     { label: "전체 분석 결과", icon: "📋", href: "/main/analysis" },
     { label: "설정", icon: "⚙", href: "/main/setting" },
   ];
@@ -32,9 +33,7 @@ export default function Sidebar() {
   const renderMenu = (items: MenuItem[], isSubMenu = false): ReactNode => (
     <ul className={`${isSubMenu ? "ml-4 mt-1 text-sm space-y-1" : "space-y-2 text-gray-700"}`}>
       {items.map(item => {
-        // [수정] isActive 로직을 startsWith로 변경하여 하위 경로에서도 메뉴가 활성화되도록 수정
         const isActive = item.href && (pathname === item.href || (item.href !== "/main" && pathname.startsWith(item.href)));
-        
         return (
           <li key={item.label}>
             {item.children ? (
@@ -70,20 +69,35 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="w-64 bg-white border-r flex flex-col shadow-sm">
-      <div className="flex items-center border-b h-16 px-4">
-        <Image
-          src="/img/grandparents.png"
-          alt="조부모 이모지"
-          width={40}
-          height={40}
-          className="w-10 h-auto"
-        />
-        <span className="ml-2 font-bold text-lg text-black whitespace-nowrap">
-          시니어 돌봄 관제시스템
-        </span>
+    <aside className="w-64 bg-white border-r flex flex-col shadow-sm justify-between">
+      {/* 상단 로고 + 메뉴 */}
+      <div>
+        <div className="flex items-center border-b h-16 px-4">
+          <Image
+            src="/img/grandparents.png"
+            alt="조부모 이모지"
+            width={40}
+            height={40}
+            className="w-10 h-auto"
+          />
+          <span className="ml-2 font-bold text-lg text-black whitespace-nowrap">
+            시니어 돌봄 관제시스템
+          </span>
+        </div>
+        <nav className="flex-1 px-4 py-6">{renderMenu(menuItems)}</nav>
       </div>
-      <nav className="flex-1 px-4 py-6">{renderMenu(menuItems)}</nav>
+
+      {/* 하단 CSV 버튼 */}
+      <div className="flex items-center justify-center px-4 pb-6">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="w-2/3 bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-600 transition text-sm cursor-pointer"
+        >
+          CSV 분석 요청
+        </button>
+      </div>
+
+      {isModalOpen && <CsvUploadModal onClose={() => setIsModalOpen(false)} />}
     </aside>
   );
 }

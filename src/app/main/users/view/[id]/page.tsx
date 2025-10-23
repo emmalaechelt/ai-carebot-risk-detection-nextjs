@@ -129,7 +129,7 @@ export default function UserDetailPage() {
         });
 
         setAge(calculateAge(data.birth_date ?? ""));
-        setPhotoPreview(data.photo_url ? "http://localhost:8080" + data.photo_url : null);
+        setPhotoPreview(data.photo_url ? process.env.NEXT_PUBLIC_API_BASE_URL + "/" + data.photo_url : null);
         setOriginalPhoto(data.photo_url ?? null);
 
         // ✅ 최근 분석 최대 5개만 저장

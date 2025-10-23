@@ -10,8 +10,8 @@ import {
   ColumnDef,
   PaginationState,
 } from "@tanstack/react-table";
-import api from "@/lib/api";
-import { PagedResponse } from "@/types";
+import api from "../../../lib/api";
+import { PagedResponse } from "../../../types";
 import * as XLSX from "xlsx";
 
 interface AnalysisResultView {

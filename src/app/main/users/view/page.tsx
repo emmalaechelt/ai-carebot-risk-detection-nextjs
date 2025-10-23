@@ -9,8 +9,8 @@ import {
   ColumnDef,
   PaginationState,
 } from "@tanstack/react-table";
-import api from "@/lib/api";
-import { SeniorListView, PagedResponse } from "@/types";
+import api from "../../../../lib/api";
+import { SeniorListView, PagedResponse } from "../../../../types";
 
 // 구/동 데이터 (주신 전체 데이터 적용)
 const guOptions: {

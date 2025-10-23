@@ -1,9 +1,11 @@
+// src/components/common/CsvUploadModal.tsx
 "use client";
 
 import { useState, ChangeEvent, DragEvent } from "react";
-import api from "@/lib/api";
+import api from "../../lib/api";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+// import { addNotification } from "@/lib/notification";  // 알림 추가 유틸 임포트
 
 interface CsvUploadModalProps {
   onClose: () => void;
@@ -63,8 +65,15 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const analysisId = res.data?.id; // 서버에서 분석 결과 ID 반환 가정
+      const analysisId = res.data?.id;
       if (analysisId) {
+        // addNotification({
+        //   id: Date.now(),
+        //   type: "csv_upload",
+        //   message: `CSV 분석이 완료되었습니다. 분석결과 보기 (ID: ${analysisId})`,
+        //   link: `/main/analysis/${analysisId}`,
+        //   isPersistent: false,
+        // });
         onClose();
         router.push(`/main/analysis/${analysisId}`);
       } else {

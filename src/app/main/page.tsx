@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
-import { DashboardData } from "@/types";
+import api from "../../lib/api";
+import { DashboardData } from "../../types/index";
 import Link from "next/link";
 
 // ✨ 스켈레톤 컴포넌트
