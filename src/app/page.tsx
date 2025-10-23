@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { useState, FormEvent, useEffect, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const [username, setUsername] = useState<string>("");

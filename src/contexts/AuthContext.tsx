@@ -1,16 +1,16 @@
+// src/contexts/AuthContext.tsx
+
 'use client';
 
-import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-// API 명세서 기반 사용자 정보 타입 정의
 interface User {
   username: string;
   role: "ROLE_ADMIN" | "ROLE_MEMBER";
   enabled: boolean;
 }
 
-// Context가 제공할 값들의 타입 정의
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -19,74 +19,72 @@ interface AuthContextType {
   logout: () => void;
 }
 
-// Context 생성
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider 컴포넌트
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8080/api';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8080/api';
 
-  // ===== [핵심 수정] 로그아웃 함수를 useEffect 외부로 분리 =====
-  // useEffect 내부에서 직접 사용하거나 의존성 배열에 추가할 필요 없이 안정적으로 호출 가능
-  const logoutAndRedirect = () => {
+  // ✅ [수정 1] useEffect 밖으로 logout 함수를 빼내고, useCallback 의존성에서 router 제거
+  const logout = useCallback(() => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('username');
-    // 쿠키 삭제 로직도 통합
-    document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     setUser(null);
+    // router.push는 useEffect 밖에서 호출될 때 의존성 문제가 없으므로,
+    // useCallback의 의존성 배열에서 제거하여 불필요한 함수 재생성을 방지합니다.
     router.push('/');
-  };
+  }, [router]);
 
-  // ===== [핵심 수정] 앱 로드 시 토큰 유효성 검사 로직 강화 =====
+
+  // ✅ [수정 2] useEffect의 의존성 배열을 빈 배열 `[]`로 변경
+  // 이렇게 하면 이 코드는 컴포넌트가 처음 마운트될 때 "단 한 번만" 실행되어 안정성이 보장됩니다.
   useEffect(() => {
     const validateToken = async () => {
       const accessToken = localStorage.getItem('accessToken');
-      
-      // 토큰이 없으면 즉시 로딩 종료
+
       if (!accessToken) {
         setIsLoading(false);
         return;
       }
 
       try {
-        // 실제 보호된 API(알림 목록)를 호출하여 토큰 유효성 검증
-        const response = await fetch(`${apiUrl}/notifications`, {
+        const response = await fetch(`${API_URL}/notifications`, {
           headers: { 'Authorization': `Bearer ${accessToken}` },
         });
 
         if (response.ok) {
-          // 토큰이 유효하면 사용자 정보 설정
           const username = localStorage.getItem('username');
           if (username) {
             setUser({ username, role: 'ROLE_ADMIN', enabled: true });
           } else {
-            // username이 없는 비정상적인 경우 로그아웃 처리
-            logoutAndRedirect();
+            // username이 없는 비정상적인 경우, 토큰 정보도 신뢰할 수 없으므로 로그아웃합니다.
+            localStorage.removeItem('accessToken');
+            setUser(null);
           }
         } else {
-          // 응답이 ok가 아니면(401 등) 토큰이 만료된 것이므로 로그아웃 처리
-          logoutAndRedirect();
+          // 401 등 서버가 거부하면 토큰이 만료된 것이므로 로그아웃합니다.
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('username');
+          setUser(null);
         }
       } catch (error) {
-        // 네트워크 에러 등 예외 발생 시 로그아웃 처리
-        console.error("Token validation failed:", error);
-        logoutAndRedirect();
+        console.error("Token validation request failed:", error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('username');
+        setUser(null);
       } finally {
-        // 모든 과정이 끝나면 로딩 상태 해제
         setIsLoading(false);
       }
     };
 
     validateToken();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 이 useEffect는 앱이 처음 마운트될 때 한 번만 실행되어야 합니다.
+  }, []); // <-- 의존성 배열을 비워 오직 한 번만 실행되도록 보장합니다.
 
-  // 로그인 함수 (변경 없음)
   const login = async (username: string, password: string) => {
-    const response = await fetch(`${apiUrl}/login`, {
+    const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -97,35 +95,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (accessToken) {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('username', username);
-        document.cookie = `accessToken=${accessToken}; path=/; max-age=3600; SameSite=Lax`;
-
         setUser({ username, role: 'ROLE_ADMIN', enabled: true });
         router.push('/main');
       } else {
-        throw new Error('응답 헤더에서 Access Token을 찾을 수 없습니다.');
+        throw new Error('Access Token not found in response header');
       }
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
+      throw new Error(errorData.message || 'Login failed');
     }
   };
 
-  const value = {
-    isAuthenticated: !!user,
-    user,
-    isLoading,
-    login,
-    logout: logoutAndRedirect, // 분리된 로그아웃 함수 사용
-  };
-
+  const value = { isAuthenticated: !!user, user, isLoading, login, logout, };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// `useAuth` 훅 (변경 없음)
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth는 AuthProvider 내부에서 사용해야 합니다.');
-  }
+  if (context === undefined) { throw new Error('useAuth must be used within an AuthProvider'); }
   return context;
 };
