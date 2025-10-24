@@ -56,8 +56,9 @@ function AuthenticatedLayout({ children, user }: { children: ReactNode; user: Me
 
   return (
     <>
-      {/* 실시간 알림 토스트를 화면 우측 상단에 렌더링하는 컨테이너 */}
-      <div className="fixed top-5 right-5 z-[100] flex flex-col items-end space-y-2">
+      {/* ✅ 3. 토스트 알림을 화면 우측 상단에 렌더링하기 위한 컨테이너 */}
+      <div className="fixed top-5 right-5 z-[100] flex flex-col items-end space-y-2 w-full max-w-sm">
+        {/* ✅ 4. toastNotifications 배열을 순회하며 NotificationToast 컴포넌트를 렌더링합니다. */}
         {toastNotifications.map(notification => (
           <NotificationToast
             key={notification.notification_id}

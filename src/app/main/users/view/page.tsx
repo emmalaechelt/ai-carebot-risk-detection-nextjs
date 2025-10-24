@@ -9,8 +9,8 @@ import {
   ColumnDef,
   PaginationState,
 } from "@tanstack/react-table";
-import api from "../../../../lib/api";
-import { SeniorListView, PagedResponse } from "../../../../types";
+import api from "@/lib/api";
+import { SeniorListView, PagedResponse } from "@/types";
 
 // 구/동 데이터 (주신 전체 데이터 적용)
 const guOptions: {
@@ -224,7 +224,7 @@ export default function UsersViewPage() {
 
       {/* 테이블 */}
       <div className="bg-white rounded-lg shadow-sm p-3">
-        <div className="flex justify-between items-center text-base mb-3">
+        <div className="flex justify-between items-center text-sm mb-3">
           <span>총 <strong>{totalElements}</strong>명</span>
           <select value={table.getState().pagination.pageSize} onChange={e => table.setPageSize(Number(e.target.value))} className="border rounded px-2 py-1 bg-white text-sm">
             {[10,20,30,50].map(s => <option key={s} value={s}>{s}개씩 보기</option>)}

@@ -329,9 +329,9 @@ export default function AnalysisPage() {
       </div>
 
       {/* 결과 테이블 */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
+      <div className="bg-white p-3 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-3">
-          <span className="font-semibold">검색 결과 : 총 {totalElements}건</span>
+          <span className="font-semibold text-sm">검색 결과 : 총 {totalElements}건</span>
           <select value={table.getState().pagination.pageSize} onChange={e => table.setPageSize(Number(e.target.value))} className="border rounded px-2 py-1 bg-white text-sm">
             {[10, 20, 30, 40, 50].map(size => <option key={size} value={size}>{size}개씩 보기</option>)}
           </select>
