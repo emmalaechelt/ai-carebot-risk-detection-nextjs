@@ -1,12 +1,15 @@
 // src/app/layout.tsx
+
 import type { Metadata } from "next";
-// 1. 'useAuth' 훅 대신 'AuthProvider' 컴포넌트를 import 합니다.
-import { AuthProvider } from "../contexts/AuthContext"; 
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext"; // ✅ 1. AuthProvider를 import 합니다.
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "시니어 돌봄 관제시스템",
-  description: "대전시 시니어 돌봄 관제시스템",
+  title: "시니어케어 돌봄로봇",
+  description: "고독사 예방을 위한 데이터 분석 대시보드",
 };
 
 export default function RootLayout({
@@ -16,8 +19,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>
-        {/* 2. AuthProvider로 자식 컴포넌트들을 감싸 전역 상태를 제공합니다. */}
+      <body className={inter.className}>
+        {/*
+          ✅ 2. AuthProvider로 children을 감싸줍니다.
+          이제 애플리케이션의 모든 페이지와 컴포넌트가
+          AuthContext의 값에 접근할 수 있게 됩니다.
+        */}
         <AuthProvider>
           {children}
         </AuthProvider>

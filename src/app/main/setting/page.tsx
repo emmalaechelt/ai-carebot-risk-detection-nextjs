@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { Member } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingPage() {
   const [members, setMembers] = useState<Member[]>([]);

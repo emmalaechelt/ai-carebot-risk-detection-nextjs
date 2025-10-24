@@ -12,59 +12,69 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:808
 export const useNotifications = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  // ... (other state declarations)
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [toastNotification, setToastNotification] = useState<Notification | null>(null);
+  const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
 
-
-  const fetchInitialNotifications = useCallback(async (token: string) => {
+  const fetchInitialNotifications = useCallback(async () => {
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
       const response = await fetch(`${API_URL}/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
+
       if (response.ok) {
         const data: Notification[] = await response.json();
         setNotifications(data);
         setUnreadCount(data.filter(n => !n.is_read).length);
-      } else {
-        console.error(`useNotifications: [ERROR] Failed to fetch initial notifications with status: ${response.status}`);
+
+        // ✅ [핵심 수정] .filter() 조건을 오직 "EMERGENCY"만 찾도록 되돌립니다.
+        const urgentNotifications = data.filter(notification => {
+          const message = notification.message.toUpperCase();
+          return message.includes("EMERGENCY");
+        });
+
+        if (urgentNotifications.length > 0) {
+          setToastNotifications(urgentNotifications);
+        }
       }
     } catch (error) {
-      console.error("useNotifications: [FATAL] Error fetching initial notifications:", error);
+      console.error("Error fetching initial notifications:", error);
     }
   }, []);
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated) {
-      return;
-    }
-
+    if (isLoading || !isAuthenticated) return;
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-        console.error("useNotifications: [ERROR] Authenticated, but no token found in localStorage. This should not happen.");
-        return;
-    }
+    if (!token) return;
 
-    fetchInitialNotifications(token);
-
+    fetchInitialNotifications();
     const controller = new AbortController();
     fetchEventSource(`${API_URL}/notifications/subscribe`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` },
       signal: controller.signal,
-      onopen: async (res) => {
-        if (!res.ok) {
-          console.error(`useNotifications: [ERROR] SSE connection failed with status: ${res.status}`);
-        } else {
+      onopen: async (res) => { /* ... */ },
+      onmessage: (event) => {
+        if (event.event === 'notification') {
+          const newNotification = JSON.parse(event.data);
+          setNotifications(prev => [newNotification, ...prev]);
+          if (!newNotification.is_read) setUnreadCount(prev => prev + 1);
+
+          // ✅ [핵심 수정] 실시간 알림의 토스트 조건도 오직 "EMERGENCY"만 확인합니다.
+          const message = newNotification.message.toUpperCase();
+          if (message.includes("EMERGENCY")) {
+            setToastNotifications(prev => [newNotification, ...prev]);
+          }
         }
       },
-      onmessage: (event) => { /* ... */ },
-      onerror: (err) => { console.error("useNotifications: [FATAL] SSE error:", err); },
+      onerror: (err) => { /* ... */ },
     });
     return () => controller.abort();
   }, [isLoading, isAuthenticated, fetchInitialNotifications]);
 
-  // ... (markAsRead and clearToast functions are unchanged)
   const markAsRead = async (notificationId: number) => { /* ... */ };
-  const clearToast = () => setToastNotification(null);
+  const clearToast = (notificationId: number) => {
+    setToastNotifications(prev => prev.filter(n => n.notification_id !== notificationId));
+  };
   
-  return { notifications, unreadCount, markAsRead, toastNotification, clearToast };
+  return { notifications, unreadCount, markAsRead, toastNotifications, clearToast };
 };
