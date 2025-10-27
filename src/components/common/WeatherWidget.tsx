@@ -8,7 +8,7 @@ interface WeatherData {
   wind: string;
   humidity: number;
   rain: number;
-  pm10: number;
+  pm10: number | null;
 }
 
 export default function WeatherWidget() {
@@ -16,30 +16,44 @@ export default function WeatherWidget() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    const fetchWeatherAndAir = async () => {
       try {
-        const res = await fetch(
+        // 🌤 1. OpenWeatherMap (날씨)
+        const weatherRes = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?q=Daejeon,KR&appid=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&units=metric&lang=kr`
         );
-        const data = await res.json();
-        if (data?.main) {
+        const weatherData = await weatherRes.json();
+
+        // 💨 2. 한국환경공단 (미세먼지)
+        const airRes = await fetch(
+          `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${process.env.NEXT_PUBLIC_AIR_API_KEY}&sidoName=대전&returnType=json&numOfRows=1&ver=1.3`
+        );
+        const airData = await airRes.json();
+
+        const pm10 =
+          airData?.response?.body?.items?.[0]?.pm10Value
+            ? Number(airData.response.body.items[0].pm10Value)
+            : null;
+
+        if (weatherData?.main) {
           setWeather({
-            temp: data.main.temp,
-            feelsLike: data.main.feels_like,
-            condition: data.weather[0].description,
-            wind: `${data.wind.speed} m/s`,
-            humidity: data.main.humidity,
-            rain: data.rain ? data.rain["1h"] : 0,
-            pm10: 10, // 예시 (실제 미세먼지 API 연결 가능)
+            temp: weatherData.main.temp,
+            feelsLike: weatherData.main.feels_like,
+            condition: weatherData.weather[0].description,
+            wind: `${weatherData.wind.speed} m/s`,
+            humidity: weatherData.main.humidity,
+            rain: weatherData.rain ? weatherData.rain["1h"] : 0,
+            pm10,
           });
         } else {
           setError("날씨 정보를 불러올 수 없습니다.");
         }
       } catch (err) {
-        setError("날씨 정보를 가져오는 중 오류가 발생했습니다.");
+        console.error("❌ fetch error:", err);
+        setError("정보를 가져오는 중 오류가 발생했습니다.");
       }
     };
-    fetchWeather();
+    fetchWeatherAndAir();
   }, []);
 
   if (error) return <div className="text-sm text-gray-600">{error}</div>;
@@ -52,7 +66,10 @@ export default function WeatherWidget() {
       <span>💨 {weather.wind}</span>
       <span>💧습도 {weather.humidity}%</span>
       <span>☂ {weather.rain}%</span>
-      <span>미세먼지 {weather.pm10}㎍/㎥</span>
+      <span>
+        🌫 미세먼지{" "}
+        {weather.pm10 !== null ? `${weather.pm10}㎍/㎥` : "정보 없음"}
+      </span>
     </div>
   );
 }

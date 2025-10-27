@@ -1,24 +1,17 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+// ✅ 1. 'useSearchParams'를 next/navigation에서 import 합니다.
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import * as XLSX from "xlsx";
 
-interface Dialogue {
-  id: number;
-  text: string;
-  uttered_at: string;
-  label: string;
-  confidence_scores: {
-    positive: number;
-    danger: number;
-    critical: number;
-    emergency: number;
-  };
-}
+// --- 타입 정의 ---
 
+// API 응답에 senior_id가 없더라도 타입 정의는 유지합니다.
+// handleStateSave 함수에서는 이 타입을 더 이상 참조하지 않습니다.
 interface DetailData {
+  senior_id: number;
   senior_name: string;
   diseases: string;
   age: number;
@@ -36,41 +29,42 @@ interface DetailData {
   dialogues: Dialogue[];
 }
 
-const labelColorMap: Record<string, string> = {
-  EMERGENCY: "bg-red-600",
-  CRITICAL: "bg-orange-600",
-  DANGER: "bg-yellow-500",
-  POSITIVE: "bg-green-600",
+interface Dialogue {
+  id: number;
+  text: string;
+  uttered_at: string;
+  label: string;
+  confidence_scores: {
+    positive: number;
+    danger: number;
+    critical: number;
+    emergency: number;
+  };
+}
+
+// --- 상수 및 매핑 객체 ---
+
+const statusMap: Record<string, { text: string; color: string; textColor: string }> = {
+  EMERGENCY: { text: "긴급", color: "bg-red-600", textColor: "text-red-600" },
+  CRITICAL: { text: "위험", color: "bg-orange-600", textColor: "text-orange-600" },
+  DANGER: { text: "주의", color: "bg-yellow-500", textColor: "text-yellow-500" },
+  POSITIVE: { text: "안전", color: "bg-green-600", textColor: "text-green-600" },
 };
 
-const labelTextColorMap: Record<string, string> = {
-  EMERGENCY: "text-red-600",
-  CRITICAL: "text-orange-600",
-  DANGER: "text-yellow-500",
-  POSITIVE: "text-green-600",
-};
-
-const labelToKorean: Record<string, string> = {
-  EMERGENCY: "긴급",
-  CRITICAL: "위험",
-  DANGER: "주의",
-  POSITIVE: "안전",
-};
+type ActionState = "CRITICAL" | "DANGER" | "POSITIVE";
 
 export default function DetailedAnalysisPage() {
   const router = useRouter();
   const { id } = useParams();
+  
+  // ✅ 2. useSearchParams 훅을 사용하여 URL의 쿼리 파라미터를 읽을 준비를 합니다.
+  const searchParams = useSearchParams();
+
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-
-  // 영어 -> 한국어 매핑
-  const reasonMap: Record<string, string> = {
-    emergency: "긴급",
-    critical: "위험",
-    danger: "주의",
-    positive: "안전",
-  };
+  const [selectedState, setSelectedState] = useState<ActionState | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -88,6 +82,46 @@ export default function DetailedAnalysisPage() {
     };
     fetchDetail();
   }, [id]);
+  
+  // ✅ 3. [핵심 수정] 이용자 상태 변경 및 저장 핸들러
+  const handleStateSave = async () => {
+    if (!selectedState) {
+      alert("변경할 상태를 먼저 선택해주세요.");
+      return;
+    }
+
+    // data.senior_id 대신 URL에서 'senior_id' 파라미터를 직접 가져옵니다.
+    const seniorId = searchParams.get('senior_id');
+
+    // ✅ [핵심 디버깅 코드] API 요청에 사용될 데이터를 객체로 만듭니다.
+    const requestBody = {
+      overall_result_id: parseInt(id as string, 10),
+      new_state: selectedState,
+      reason: `관리자가 분석 결과(ID: ${id})를 확인 후 상태를 수동으로 변경했습니다.`
+    };
+
+    // ✅ API를 호출하기 직전에, URL과 보낼 데이터를 콘솔에 출력합니다.
+    console.log(`[API 요청 데이터 확인]`);
+    console.log(`요청 URL: POST /seniors/${seniorId}/state`);
+    console.log(`요청 본문 (Body):`, requestBody);
+
+    setIsSubmitting(true);
+    try {
+      // API 호출 시 data 객체 대신 URL에서 가져온 seniorId를 사용합니다.
+      await api.post(`/seniors/${seniorId}/state`, {
+        overall_result_id: parseInt(id as string, 10),
+        new_state: selectedState,
+        reason: `관리자가 분석 결과(ID: ${id})를 확인 후 상태를 수동으로 변경했습니다.`
+      });
+      alert(`이용자의 상태가 '${statusMap[selectedState].text}'(으)로 성공적으로 변경되었습니다.`);
+      router.push('/main');
+    } catch (err) {
+      console.error("상태 변경 API 호출 실패:", err);
+      alert("상태 변경 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -107,7 +141,6 @@ export default function DetailedAnalysisPage() {
 
     try {
       const wb = XLSX.utils.book_new();
-      // 명확한 타입으로 변경: 문자열과 숫자만 들어가는 2차원 배열
       const rows: (string | number)[][] = [];
 
       // 기본 정보
@@ -122,10 +155,10 @@ export default function DetailedAnalysisPage() {
       // 분석 결과
       rows.push(["분석 결과"]);
       rows.push(["항목", "내용"]);
-      rows.push(["분석 결과", labelToKorean[data.label] || data.label]);
+      rows.push(["분석 결과", statusMap[data.label]?.text || data.label]);
       rows.push(["요약", data.summary]);
       rows.push(["대처방안", data.treatment_plan || "정보 없음"]);
-      rows.push(["근거", (data.reasons || []).map(r => reasonMap[r] || r).join(", ")]);
+      rows.push(["근거", (data.reasons || []).join(", ")]);
       rows.push([]);
 
       // confidence scores
@@ -144,7 +177,7 @@ export default function DetailedAnalysisPage() {
         rows.push([
           idx + 1,
           dlg.text,
-          labelToKorean[dlg.label] || dlg.label,
+          statusMap[dlg.label]?.text || dlg.label,
           dlg.confidence_scores.emergency,
           dlg.confidence_scores.critical,
           dlg.confidence_scores.danger,
@@ -184,7 +217,7 @@ export default function DetailedAnalysisPage() {
     );
 
   return (
-    <div className="p-6 space-y-3 text-black">
+    <div className="p-6 space-y-4 text-black">
       <h2 className="text-3xl font-bold text-center">전체 분석 결과</h2>
       <div className="flex justify-end -mt-1">
         <button
@@ -207,35 +240,36 @@ export default function DetailedAnalysisPage() {
       <div className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
         <div className="flex items-center">
           <div
-            className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${labelColorMap[data.label] || "bg-gray-300"
-              } text-white`}
+            className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${
+              statusMap[data.label]?.color || "bg-gray-300"
+            } text-white`}
           >
-            분석 결과 : {labelToKorean[data.label] || data.label}
+            분석 결과 : {statusMap[data.label]?.text || data.label}
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="flex">
-            <span className="font-bold mr-2">요약 :</span>
+            <span className="font-bold mr-2 w-20 shrink-0">요약 :</span>
             <span>{data.summary}</span>
           </div>
 
           <div className="flex">
-            <span className="font-bold mr-2">대처 방안 :</span>
+            <span className="font-bold mr-2 w-20 shrink-0">대처 방안 :</span>
             <span>{data.treatment_plan?.trim() || "대처 방안 정보가 없습니다."}</span>
           </div>
 
           <div className="flex">
-            <span className="font-bold mr-2">근거 :</span>
+            <span className="font-bold mr-2 w-20 shrink-0">근거 :</span>
             <ul className="space-y-1">
               {(data.reasons || []).map((reason, idx) => (
-                <li key={idx}>{reasonMap[reason] || reason}</li>
+                <li key={idx}>{reason}</li>
               ))}
             </ul>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-6 pt-2">
           {[
             { label: "긴급", value: data.confidence_scores.emergency, color: "bg-red-600" },
             { label: "위험", value: data.confidence_scores.critical, color: "bg-orange-600" },
@@ -258,7 +292,7 @@ export default function DetailedAnalysisPage() {
       <div className="border rounded-lg p-4 bg-white shadow-sm">
         <div className="font-bold text-xl mb-2">대화 목록</div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse border">
+          <table className="w-full text-sm border-collapse border text-center">
             <thead>
               <tr className="bg-gray-100">
                 <th className="border p-1.5 w-8">순번</th>
@@ -281,32 +315,62 @@ export default function DetailedAnalysisPage() {
                   minute: "2-digit",
                   second: "2-digit",
                 });
-                const resultColor = labelTextColorMap[dlg.label];
                 return (
-                  <tr key={dlg.id} className="bg-white">
-                    <td className="border p-1.5 text-center text-black">{i + 1}</td>
-                    <td className="border p-1.5 text-black">{dlg.text}</td>
-                    <td className="border p-1.5 text-center font-semibold">
-                      <span className={resultColor}>{labelToKorean[dlg.label] || dlg.label}</span>
+                  <tr key={dlg.id} className="bg-white hover:bg-gray-50">
+                    <td className="border p-1.5 text-black">{i + 1}</td>
+                    <td className="border p-1.5 text-black text-left">{dlg.text}</td>
+                    <td className="border p-1.5 font-semibold">
+                      <span className={statusMap[dlg.label]?.textColor}>
+                        {statusMap[dlg.label]?.text || dlg.label}
+                      </span>
                     </td>
-                    <td className="border p-1.5 text-center text-black">
+                    <td className="border p-1.5 text-black">
                       {(dlg.confidence_scores.emergency * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-1.5 text-center text-black">
+                    <td className="border p-1.5 text-black">
                       {(dlg.confidence_scores.critical * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-1.5 text-center text-black">
+                    <td className="border p-1.5 text-black">
                       {(dlg.confidence_scores.danger * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-1.5 text-center text-black">
+                    <td className="border p-1.5 text-black">
                       {(dlg.confidence_scores.positive * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-1.5 text-center text-black">{time}</td>
+                    <td className="border p-1.5 text-black text-xs">{time}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+      
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <h3 className="text-xl font-bold mb-4">조치 완료 결과</h3>
+        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-md">
+          <p className="font-semibold text-gray-800">이용자 상태 변경:</p>
+          <div className="flex gap-2">
+            {(["CRITICAL", "DANGER", "POSITIVE"] as ActionState[]).map(stateKey => (
+              <button
+                key={stateKey}
+                onClick={() => setSelectedState(stateKey)}
+                className={`px-4 py-2 rounded-lg font-bold transition-all
+                  ${selectedState === stateKey
+                    ? `${statusMap[stateKey].color} text-white ring-2 ring-offset-2 ${statusMap[stateKey].color.replace('bg-', 'ring-')}`
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"}
+                `}
+              >
+                {statusMap[stateKey].text}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleStateSave}
+            disabled={!selectedState || isSubmitting}
+            className="ml-auto bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            저장
+          </button>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import type { Notification } from '@/types/notification';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +28,7 @@ export const useNotifications = () => {
 
     const controller = new AbortController();
     const SSE_URL = `${API_BASE_URL}/notifications/subscribe`;
+    
 
     // 2. SSE 연결을 시작합니다.
     fetchEventSource(SSE_URL, {

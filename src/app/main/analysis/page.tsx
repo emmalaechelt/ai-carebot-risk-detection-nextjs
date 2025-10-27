@@ -1,4 +1,3 @@
-// src/app/main/analysis/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo, ChangeEvent, useCallback } from "react";
@@ -10,8 +9,8 @@ import {
   ColumnDef,
   PaginationState,
 } from "@tanstack/react-table";
-import api from "../../../lib/api";
-import { PagedResponse } from "../../../types";
+import api from "@/lib/api";
+import { PagedResponse } from "@/types";
 import * as XLSX from "xlsx";
 
 interface AnalysisResultView {
@@ -143,7 +142,12 @@ export default function AnalysisPage() {
     {
       accessorKey: "summary", header: "요약", cell: ({ row }) => (
         <button
-          onClick={() => router.push(`/main/analysis/${row.original.overall_result_id}`)}
+          // ✅ [핵심 수정] router.push에 쿼리 파라미터로 senior_id를 추가합니다.
+          onClick={() => {
+            const resultId = row.original.overall_result_id;
+            const seniorId = row.original.senior_id;
+            router.push(`/main/analysis/${resultId}?senior_id=${seniorId}`);
+          }}
           className="text-blue-600 hover:underline text-left cursor-pointer"
         >
           {row.original.summary}

@@ -1,14 +1,14 @@
-// src/components/common/NotificationBell.tsx
-
 'use client';
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { FaBell } from "react-icons/fa";
-import { useNotificationContext } from "@/contexts/NotificationContext"; // ✅ 올바른 컨텍스트 import
-import type { Notification } from "@/types/notification"; // ✅ 통합된 타입 import
+import { useNotificationContext } from "@/contexts/NotificationContext";
+import type { Notification } from "@/types/notification";
 
 const NotificationBell: React.FC = () => {
-  // ✅ Context에서 모든 상태와 함수를 가져옵니다. 로컬 상태는 필요 없습니다.
+  const router = useRouter();
+
   const { 
     notifications, 
     unreadCount, 
@@ -17,27 +17,42 @@ const NotificationBell: React.FC = () => {
     setIsBellOpen 
   } = useNotificationContext();
 
-  // ✅ 알림 타입은 API 명세서에 따라 'ANALYSIS_COMPLETE', 'SENIOR_STATE_CHANGED' 등입니다.
-  //    백엔드에서 보내주는 실제 값으로 필터링해야 합니다.
-  //    여기서는 모든 알림을 보여주는 것으로 가정합니다. 필요시 아래 주석을 참고하여 필터링하세요.
-  // const filteredNotifications = notifications.filter((n) => n.type === "ANALYSIS_COMPLETE");
-  const allNotifications = notifications;
-
   const handleToggle = () => setIsBellOpen(!isBellOpen);
 
+  // ✅ 3. 알림 항목 클릭 시 실행될 핸들러 함수를 수정합니다.
   const handleClick = (notification: Notification) => {
-    // ✅ 읽지 않은 알림만 읽음 처리 요청
+    // 읽지 않은 알림이라면 읽음 상태로 변경합니다.
     if (!notification.is_read) {
       markAsRead(notification.notification_id);
     }
-    // 링크가 있다면 해당 링크로 이동 (구현 필요 시)
-    // if (notification.link) { router.push(notification.link); }
-    setIsBellOpen(false); // 메뉴 닫기
+
+    // [핵심 로직] 알림 타입에 따라 적절한 페이지로 이동시킵니다.
+    switch (notification.type) {
+      case 'ANALYSIS_COMPLETE':
+        // 알림 타입이 '분석 완료'일 경우, resource_id를 사용하여 분석 상세 페이지로 이동합니다.
+        router.push(`/main/analysis/${notification.resource_id}`);
+        break;
+      
+      case 'SENIOR_STATE_CHANGED':
+        // 예시: 알림 타입이 '시니어 상태 변경'일 경우, 해당 시니어 상세 페이지로 이동할 수 있습니다.
+        // 프로젝트의 URL 구조에 맞게 경로를 설정하세요. (예: /main/users/view/[id])
+        // router.push(`/main/users/view/${notification.resource_id}`);
+        console.log(`Senior state changed for senior ID: ${notification.resource_id}. Navigation not implemented yet.`);
+        break;
+
+      default:
+        // 다른 타입의 알림은 페이지 이동 없이 콘솔에 로그만 남깁니다.
+        console.log(`Navigation is not defined for notification type: ${notification.type}`);
+        break;
+    }
+
+    // 페이지 이동 후, 벨 메뉴를 닫습니다.
+    setIsBellOpen(false);
   };
 
   return (
     <div className="relative inline-block">
-      {/* 🔔 벨 아이콘 */}
+      {/* 벨 아이콘 */}
       <button
         onClick={handleToggle}
         className="relative bg-transparent border-none cursor-pointer p-2 text-gray-800 hover:text-blue-600 transition-colors"
@@ -57,19 +72,17 @@ const NotificationBell: React.FC = () => {
             <h4 className="text-sm font-semibold text-gray-700">알림</h4>
           </div>
 
-          {allNotifications.length > 0 ? (
+          {notifications.length > 0 ? (
             <ul className="max-h-80 overflow-y-auto">
-              {allNotifications.map((n) => (
-                // ✅ key와 id를 notification_id로 수정
+              {notifications.map((n) => (
                 <li
                   key={n.notification_id}
-                  onClick={() => handleClick(n)}
+                  onClick={() => handleClick(n)} // 수정된 핸들러를 연결합니다.
                   className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
                     !n.is_read ? "bg-blue-50" : "bg-white"
                   }`}
                 >
                   <p className="text-gray-800 text-sm">{n.message}</p>
-                  {/* ✅ 날짜 표시를 위해 id 대신 created_at 사용 */}
                   <small className="text-gray-500 text-xs">
                     {new Date(n.created_at).toLocaleString("ko-KR")}
                   </small>
