@@ -1,4 +1,5 @@
-"use client";
+// app/register/page.tsx
+'use client';
 
 import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -6,6 +7,7 @@ import Image from "next/image";
 import axios from "axios";
 import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
+import { geocodeAddress } from "@/utils/geocode";
 
 const isValidDate = (y: number, m: number, d: number): boolean => {
   const date = new Date(y, m - 1, d);
@@ -57,6 +59,8 @@ export default function UserRegisterPage() {
     guardian_phone: "",
     guardian_note: "",
     note: "",
+    lat: 0,
+    lng: 0,
   });
 
   const [birth, setBirth] = useState({ year: "", month: "", day: "" });
@@ -66,6 +70,7 @@ export default function UserRegisterPage() {
   const addressDetailRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // --- 다음 우편번호 스크립트 로드 ---
   useEffect(() => {
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
     if (document.querySelector(`script[src="${scriptUrl}"]`)) {
@@ -79,6 +84,7 @@ export default function UserRegisterPage() {
     document.head.appendChild(script);
   }, []);
 
+  // --- 생년월일 → 나이 계산 ---
   useEffect(() => {
     const { year, month, day } = birth;
     if (year.length === 4 && month.length > 0 && day.length > 0) {
@@ -99,6 +105,7 @@ export default function UserRegisterPage() {
     }
   }, [birth]);
 
+  // --- 폼 change handler ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -121,18 +128,17 @@ export default function UserRegisterPage() {
     setForm((prev) => ({ ...prev, [name]: formatted }));
   };
 
-  const handleZipSearch = () => {
+  // --- 주소 검색 & 좌표 변환 ---
+  const handleZipSearch = async () => {
     if (!isScriptLoaded || !window.daum?.Postcode) {
       alert("주소 검색 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
-    const Postcode = window.daum.Postcode as unknown as {
-      new (options: { oncomplete: (data: DaumPostcodeData) => void }): { open: () => void };
-    };
+    const Postcode = window.daum.Postcode;
 
     const postcode = new Postcode({
-      oncomplete: (data: DaumPostcodeData) => {
+      oncomplete: async (data: DaumPostcodeData) => {
         setForm((prev) => ({
           ...prev,
           zip_code: data.zonecode || "",
@@ -141,6 +147,9 @@ export default function UserRegisterPage() {
           dong: data.bname || "",
         }));
         addressDetailRef.current?.focus();
+
+        const coords = await geocodeAddress(data.roadAddress || "");
+        if (coords) setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
       },
     });
 
@@ -157,6 +166,7 @@ export default function UserRegisterPage() {
     }
   };
 
+  // --- 제출 handler ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -191,68 +201,43 @@ export default function UserRegisterPage() {
       }
 
       if (dollRes.data.senior_assigned) {
-        alert(
-          `해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.\n다른 인형을 선택하세요.`
-        );
+        alert(`해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.\n다른 인형을 선택하세요.`);
         setIsSubmitting(false);
         return;
       }
 
-      const seniorPayload = {
-        doll_id: form.doll_id,
-        name: form.name,
-        birth_date: form.birth_date,
-        sex: form.sex,
-        residence: form.residence,
-        phone: form.phone,
-        address: form.address,
-        address_detail: form.address_detail.trim(),
-        gu: form.gu,
-        dong: form.dong,
-        note: form.note,
-        guardian_name: form.guardian_name,
-        guardian_phone: form.guardian_phone,
-        relationship: form.relationship,
-        guardian_note: form.guardian_note,
-        diseases: form.diseases,
-        medications: form.medications,
-        disease_note: form.disease_note,
-      };
-
+      const seniorPayload = { ...form };
       const formData = new FormData();
       formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
       if (photoFile) formData.append("photo", photoFile);
 
       await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
-
       alert("이용자 등록 완료!");
       router.push("/main/users/view");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
         const serverMsg = err.response?.data?.message;
-
-        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n(입력값 확인 필요)\n${serverMsg || ""}`);
+        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n${serverMsg || ""}`);
         else if (status === 401) alert("인증이 만료되었습니다. 다시 로그인 해주세요.");
-        else if (status === 403) alert("수정 권한이 없습니다. 관리자에게 문의하세요.");
+        else if (status === 403) alert("수정 권한이 없습니다.");
         else if (status === 404) alert("이용자 정보를 찾을 수 없습니다.");
-        else if (status === 409) alert("이미 등록된 인형 또는 중복된 데이터가 존재합니다.");
-        else if (status === 500) alert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        else alert(serverMsg || "예상치 못한 오류가 발생했습니다.");
+        else if (status === 409) alert("이미 등록된 인형 또는 중복 데이터가 존재합니다.");
+        else if (status === 500) alert("서버 내부 오류가 발생했습니다.");
+        else alert(serverMsg || "알 수 없는 오류가 발생했습니다.");
       } else {
-        alert("알 수 없는 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
+        alert("알 수 없는 오류가 발생했습니다.");
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- UI 정의 ---
   const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
   const tableBorderClass = "border-gray-400";
   const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
-  const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
-  const tdClass = `border ${tableBorderClass} p-2 align-middle`;
+  const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center`;
+  const tdClass = `border ${tableBorderClass} p-2`;
   const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
 

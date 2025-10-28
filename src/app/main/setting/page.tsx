@@ -39,12 +39,28 @@ export default function SettingPage() {
       try {
         await api.delete(`/members/${username}`);
         alert('회원이 성공적으로 삭제되었습니다.');
-        // 삭제 후 목록을 다시 불러옵니다.
-        fetchMembers();
+        fetchMembers(); // 삭제 후 목록 갱신
       } catch (err) {
         console.error(`Failed to delete member ${username}:`, err);
         alert('회원 삭제 중 오류가 발생했습니다.');
       }
+    }
+  };
+
+  const handlePasswordChange = async (username: string) => {
+    const newPassword = window.prompt(`'${username}'의 새 비밀번호를 입력하세요:`);
+
+    if (!newPassword || newPassword.trim() === "") {
+      alert("비밀번호를 입력해야 합니다.");
+      return;
+    }
+
+    try {
+      await api.patch(`/members/${username}/password`, { newPassword });
+      alert('비밀번호가 성공적으로 변경되었습니다.');
+    } catch (err) {
+      console.error(`Failed to change password for ${username}:`, err);
+      alert('비밀번호 변경 중 오류가 발생했습니다.');
     }
   };
 
@@ -80,13 +96,21 @@ export default function SettingPage() {
                   </th>
                   <td className="px-6 py-4">{member.role}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      member.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        member.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}
+                    >
                       {member.enabled ? '활성' : '비활성'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-6 py-4 text-center space-x-2">
+                    <button
+                      onClick={() => handlePasswordChange(member.username)}
+                      className="px-2 py-1 rounded text-xs bg-blue-500 text-white hover:bg-blue-600"
+                    >
+                      비밀번호 변경
+                    </button>
                     <button
                       onClick={() => handleDelete(member.username)}
                       disabled={member.username === currentUser?.username}

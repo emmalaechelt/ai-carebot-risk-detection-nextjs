@@ -1,11 +1,21 @@
+// ==========================================================
+// 📘 API 타입 정의 통합 파일 (index.ts)
+// 버전: 1.6.0
+// 시스템: 고독사 예방 시니어케어 돌봄로봇 데이터 분석 플랫폼
+// ==========================================================
+
+// ----------------------------------------------------------
 // --- 인증 및 회원 ---
+// ----------------------------------------------------------
 export interface Member {
   username: string;
   role: "ROLE_ADMIN" | "ROLE_MEMBER";
   enabled: boolean;
 }
 
-// --- 페이징 응답 (목록 조회 API 공통) ---
+// ----------------------------------------------------------
+// --- 공통 페이징 응답 타입 ---
+// ----------------------------------------------------------
 export interface PagedResponse<T> {
   content: T[];
   page_number: number;
@@ -16,35 +26,39 @@ export interface PagedResponse<T> {
   is_first: boolean;
 }
 
-// --- 시니어 관련 공통 타입 ---
+// ----------------------------------------------------------
+// --- 공통 Enum 및 타입 정의 ---
+// ----------------------------------------------------------
 export type SeniorState = "POSITIVE" | "DANGER" | "CRITICAL" | "EMERGENCY";
 export type SeniorSex = "MALE" | "FEMALE";
-
-// 리스크 레벨 타입 (문자열 리터럴 타입), SeniorState와 동일하지만 용도 구분을 위해 정의
 export type RiskLevel = SeniorState;
 
 // 거주 형태 Enum
 export enum Residence {
-  SINGLE_FAMILY_HOME = '단독주택',
-  MULTIPLEX_HOUSING = '다세대주택',
-  MULTI_FAMILY_HOUSING = '다가구주택',
-  APARTMENT = '아파트',
+  SINGLE_FAMILY_HOME = "단독주택",
+  MULTIPLEX_HOUSING = "다세대주택",
+  MULTI_FAMILY_HOUSING = "다가구주택",
+  APARTMENT = "아파트",
 }
 
+// ----------------------------------------------------------
 // --- 시니어 상세 정보 (GET /seniors/{id}) ---
+// ----------------------------------------------------------
 export interface Senior {
   id: number;
   doll_id: string;
   name: string;
-  birth_date: string; // "YYYY-MM-DD"
+  birth_date: string; // YYYY-MM-DD
   sex: SeniorSex;
   phone: string;
   address: string;
-  address_detail: string; 
-  residence: Residence | ""; 
+  address_detail: string;
+  latitude?: number;
+  longitude?: number;
+  residence: Residence | "";
   diseases?: string;
   medications?: string;
-  disease_note?: string; 
+  disease_note?: string;
   guardian_name: string;
   relationship: string;
   guardian_phone: string;
@@ -56,10 +70,13 @@ export interface Senior {
     label: SeniorState;
     summary: string;
     timestamp: string;
+    is_resolved: boolean;
   }[];
 }
 
+// ----------------------------------------------------------
 // --- 시니어 목록 조회용 축약 정보 (GET /seniors) ---
+// ----------------------------------------------------------
 export interface SeniorListView {
   senior_id: number;
   name: string;
@@ -68,12 +85,16 @@ export interface SeniorListView {
   gu: string;
   dong: string;
   state: SeniorState;
+  latitude: number;
+  longitude: number;
   doll_id: string;
   phone: string;
   created_at: string; // "YYYY-MM-DDTHH:mm:ss"
 }
 
-// --- 긴급 분석 결과 (대시보드 API 내 사용) ---
+// ----------------------------------------------------------
+// --- 긴급 분석 결과 (대시보드 내 사용) ---
+// ----------------------------------------------------------
 export interface UrgentResult {
   overall_result_id: number;
   label: SeniorState;
@@ -83,11 +104,14 @@ export interface UrgentResult {
   gu: string;
   dong: string;
   summary: string;
-  treatment_plan?: string; // API 명세서에 따라 optional 처리
+  treatment_plan?: string; // optional
   timestamp: string;
+  is_resolved: boolean;
 }
 
-// --- 대시보드 (GET /dashboard) ---
+// ----------------------------------------------------------
+// --- 대시보드 데이터 (GET /dashboard) ---
+// ----------------------------------------------------------
 export interface DashboardData {
   state_count: {
     total: number;
@@ -95,21 +119,53 @@ export interface DashboardData {
     danger: number;
     critical: number;
     emergency: number;
-    [key: string]: number; // 문자열 키로 접근할 수 있도록 인덱스 서명 추가
+    [key: string]: number; // 인덱스 접근 허용
   };
   recent_urgent_results: UrgentResult[];
 }
 
-// --- 지도 및 목록 컴포넌트에서 사용할 확장된 시니어 타입 ---
-// UrgentResult 타입을 기반으로, 지도 좌표(lat, lng)와 호환성 필드(name)를 추가합니다.
+// ----------------------------------------------------------
+// --- 지도/리스크 시니어용 확장 타입 ---
+// ----------------------------------------------------------
 export interface RiskSenior extends UrgentResult {
-  name?: string;  // 다른 API 응답 필드와의 호환성을 위함
-  lat?: number;   // 주소 변환 후 추가될 위도
-  lng?: number;   // 주소 변환 후 추가될 경도
+  name?: string;  // 다른 응답과 호환
+  lat?: number;   // 주소 기반 위도
+  lng?: number;   // 주소 기반 경도
 }
 
+// ----------------------------------------------------------
 // --- 인형 목록 조회용 축약 정보 (GET /dolls) ---
+// ----------------------------------------------------------
 export interface DollListView {
-  id: string;              // 인형의 고유 ID
+  id: string;               // 인형 고유 ID
   senior_id: number | null; // 할당된 시니어 ID (없으면 null)
 }
+
+// ----------------------------------------------------------
+// --- 공통 에러 응답 타입 ---
+// ----------------------------------------------------------
+export interface ApiError {
+  timestamp: string;
+  status: number;
+  error: string;
+  message: string;
+  path: string;
+}
+
+// ----------------------------------------------------------
+// --- API 응답 유틸리티 타입 ---
+// ----------------------------------------------------------
+export type ApiResponse<T> = {
+  success: boolean;
+  data?: T;
+  error?: ApiError;
+};
+
+// ----------------------------------------------------------
+// --- API 버전 정보 ---
+// ----------------------------------------------------------
+export const API_VERSION = "1.6.0";
+
+// ==========================================================
+// ✅ End of File
+// ==========================================================
