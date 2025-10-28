@@ -2,47 +2,75 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
-import { DashboardData, UrgentResult } from "@/types/index";
-import Link from "next/link";
-import EmergencyMap from "@/components/common/EmergencyMap";
+import { DashboardData, RiskSenior, RiskLevel } from "@/types"; // ✨ 새로 만든 타입 import
+import RiskRankMap from "@/components/common/RiskRankMap"; // ✨ 지도 컴포넌트 import
+import RiskRankList from "@/components/common/RiskRankList"; // ✨ 목록 컴포넌트 import
+import useKakaoMapScript from "@/hooks/useKakaoMapScript"; // ✨ 카카오맵 훅 import
 
-// ✨ 스켈레톤 컴포넌트
+// ... (DashboardSkeleton 컴포넌트는 그대로 유지)
 function DashboardSkeleton() {
-  return (
-    <div className="space-y-2">
-      <div className="border rounded-lg p-4 bg-white shadow-sm">
-        <div className="h-6 w-32 mx-auto bg-gray-200 rounded animate-pulse-slow mb-4"></div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="h-4 w-16 mx-auto bg-gray-200 rounded animate-pulse-slow"></div>
-              <div className="h-6 w-12 mx-auto bg-gray-200 rounded animate-pulse-slow"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="border rounded-lg p-4 bg-white shadow-sm">
-        <div className="h-6 w-48 bg-gray-200 rounded animate-pulse-slow mb-4"></div>
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center p-3 rounded-lg bg-gray-100 animate-pulse-slow">
-              <div className="w-10 h-10 rounded-full bg-gray-200"></div>
-              <div className="ml-3 flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  /* ... 기존 스켈레톤 코드 ... */
 }
+
+// 리스크 레벨 한글명 매핑
+const RISK_LABEL_MAP: Record<RiskLevel, string> = {
+  EMERGENCY: '긴급',
+  CRITICAL: '위험',
+  DANGER: '주의',
+  POSITIVE: '안전',
+};
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // --- 지도/목록 연동을 위한 상태 추가 ---
+  const [riskSeniors, setRiskSeniors] = useState<RiskSenior[]>([]);
+  const [selectedSenior, setSelectedSenior] = useState<RiskSenior | null>(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 36.3504119, lng: 127.3845475 }); // 대전시청 기본 위치
+  const [riskLevelLabel, setRiskLevelLabel] = useState<string>('긴급/위험');
+
+  // --- 카카오맵 스크립트 로드 ---
+  useKakaoMapScript();
+
+  // --- 주소 좌표 변환 함수 추가 ---
+  const geocodeAddress = (address: string): Promise<{ lat: number; lng: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!window.kakao || !window.kakao.maps) {
+        reject(new Error("Kakao Map script is not loaded yet."));
+        return;
+      }
+      const geocoder = new window.kakao.maps.services.Geocoder();
+      geocoder.addressSearch(address, (result: any, status: any) => {
+        if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+          resolve({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
+        } else {
+          reject(new Error("주소 좌표 변환에 실패했습니다."));
+        }
+      });
+    });
+  };
+
+  // --- 시니어 목록에 좌표를 추가하는 함수 추가 ---
+  const addCoordinatesToSeniors = async (seniors: RiskSenior[]) => {
+    const seniorsWithCoords = await Promise.all(
+      seniors.map(async (senior) => {
+        const fullAddress = `대전 ${senior.gu} ${senior.dong}`;
+        try {
+          const coords = await geocodeAddress(fullAddress);
+          return { ...senior, ...coords };
+        } catch (error) {
+          console.error(`${senior.senior_name}님 주소 변환 실패: `, error);
+          return { ...senior, lat: mapCenter.lat, lng: mapCenter.lng }; // 실패 시 기본 좌표
+        }
+      })
+    );
+    setRiskSeniors(seniorsWithCoords);
+    if (seniorsWithCoords.length > 0 && seniorsWithCoords[0].lat) {
+      setMapCenter({ lat: seniorsWithCoords[0].lat, lng: seniorsWithCoords[0].lng });
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +78,8 @@ export default function DashboardPage() {
       try {
         const response = await api.get<DashboardData>("/dashboard");
         setData(response.data);
+        // ✨ 데이터 로드 성공 후, 지도에 표시할 좌표를 추가합니다.
+        await addCoordinatesToSeniors(response.data.recent_urgent_results);
       } catch (err) {
         setError("대시보드 데이터를 불러오는 데 실패했습니다.");
         console.error(err);
@@ -60,59 +90,46 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
-  if (loading) return <DashboardSkeleton />;
+  // --- 지도/목록 상호작용 핸들러 추가 ---
+  const handleSeniorSelect = (senior: RiskSenior) => {
+    setSelectedSenior(senior);
+    if (senior.lat && senior.lng) {
+      setMapCenter({ lat: senior.lat, lng: senior.lng });
+    }
+  };
+
+  const handleCloseOverlay = () => {
+    setSelectedSenior(null);
+  };
+
+  const handleRiskCategoryClick = async (level: RiskLevel) => {
+    setLoading(true);
+    setSelectedSenior(null);
+    setRiskLevelLabel(RISK_LABEL_MAP[level]);
+    try {
+      const response = await api.get(`/analyze?label=${level}&size=20`);
+      await addCoordinatesToSeniors(response.data.content);
+    } catch (err) {
+      console.error(`${level} 목록 로드 실패: `, err);
+      setRiskSeniors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
+  if (!data && loading) return <DashboardSkeleton />;
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
 
-  const riskInfo: Record<string, { label: string; className: string; priority: number }> = {
-    EMERGENCY: { label: "긴급", className: "text-red-600 border-red-200 bg-red-50", priority: 1 },
-    CRITICAL: { label: "위험", className: "text-orange-600 border-orange-200 bg-orange-50", priority: 2 },
-    DANGER: { label: "주의", className: "text-yellow-500 border-yellow-200 bg-yellow-50", priority: 3 },
-    POSITIVE: { label: "안전", className: "text-green-600 border-green-200 bg-green-50", priority: 4 },
+  const riskInfo: Record<string, { label: string; className: string }> = {
+    EMERGENCY: { label: "긴급", className: "text-red-600 border-red-200 bg-red-50 hover:bg-red-100" },
+    CRITICAL: { label: "위험", className: "text-orange-600 border-orange-200 bg-orange-50 hover:bg-orange-100" },
+    DANGER: { label: "주의", className: "text-yellow-500 border-yellow-200 bg-yellow-50 hover:bg-yellow-100" },
+    POSITIVE: { label: "안전", className: "text-green-600 border-green-200 bg-green-50 hover:bg-green-100" },
   };
-
-  const defaultRisk = { label: "", className: "text-black border-gray-200 bg-white", priority: 5 };
-
-  // 이름 기준으로 중복 제거 + 긴급 우선 + 요약 합치기 + 최근 시간 기준 정렬
-  const getDisplayResults = () => {
-    const map = new Map<string, { label: string; summary: string; latest: UrgentResult }>();
-
-    data.recent_urgent_results.forEach((item) => {
-      const key = item.senior_name;
-
-      if (!map.has(key)) {
-        map.set(key, { label: item.label, summary: item.summary, latest: item });
-      } else {
-        const existing = map.get(key)!;
-
-        // 위험도 우선
-        if (riskInfo[item.label].priority < riskInfo[existing.label].priority) {
-          existing.label = item.label;
-        }
-
-        // 요약 합치기
-        if (!existing.summary.includes(item.summary)) {
-          existing.summary += " / " + item.summary;
-        }
-
-        // 최신 timestamp 선택
-        if (new Date(item.timestamp) > new Date(existing.latest.timestamp)) {
-          existing.latest = item;
-        }
-      }
-    });
-
-    // 가장 최근 시간순으로 정렬
-    return Array.from(map.values())
-      .map((v) => ({ ...v.latest, label: v.label, summary: v.summary }))
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 10);
-  };
-
-  const displayResults = getDisplayResults();
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {/* 전체 현황 */}
       <div className="border rounded-lg p-4 bg-white shadow-sm">
         <h2 className="text-2xl font-bold mb-4 text-center text-black">전체 현황</h2>
@@ -122,10 +139,15 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold text-black">{data.state_count.total}명</div>
           </div>
           {(["EMERGENCY", "CRITICAL", "DANGER", "POSITIVE"] as const).map((key) => {
-            const risk = riskInfo[key] || defaultRisk;
+            const risk = riskInfo[key];
             const countKey = key.toLowerCase() as keyof DashboardData["state_count"];
             return (
-              <div key={key} className={`${risk.className} rounded-lg p-2`}>
+              // ✨ 현황 카드를 클릭 가능하도록 수정
+              <div
+                key={key}
+                className={`${risk.className} rounded-lg p-2 cursor-pointer transition-transform transform hover:scale-105`}
+                onClick={() => handleRiskCategoryClick(key)}
+              >
                 <div className="font-semibold text-xl">{risk.label}</div>
                 <div className="text-xl font-bold">{data.state_count[countKey]}명</div>
               </div>
@@ -134,44 +156,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 최근 분석 결과 */}
-      <div className="border rounded-lg p-3 bg-white shadow-sm max-w-full">
-        <h2 className="text-lg font-bold mb-3 text-black">최근 분석 결과 (최대 10건)</h2>
-        <div className="space-y-4">
-          {displayResults.length > 0 ? (
-            displayResults.map((item) => {
-              const risk = riskInfo[item.label] || defaultRisk;
-              return (
-                <Link href={`/main/analysis/${item.overall_result_id}`} key={item.overall_result_id}>
-                  <div
-                    className={`relative flex flex-col px-3 py-2 mb-2 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${risk.className}`}
-                  >
-                    {/* 첫 줄: 이모지 + 이름 + 성별/나이 + 주소 + 시간 */}
-                    <div className="flex flex-wrap items-center gap-2 text-base text-gray-700">
-                      <span>👤</span>
-                      <span className="font-semibold text-black">{item.senior_name}</span>
-                      <span>({item.sex === "MALE" ? "남" : "여"}/{item.age}세)</span>
-                      <span>📍 {item.gu} {item.dong}</span>
-                      <span>⏱ {new Date(item.timestamp).toLocaleString("ko-KR")}</span>
-                    </div>
-                    {/* 둘째 줄: 요약 */}
-                    <div className="mt-1 text-lg text-gray-700">{item.summary}</div>
-                    {/* 오른쪽 상단 배지 */}
-                    {risk.label && (
-                      <span
-                        className={`absolute top-2 right-2 text-xl font-semibold px-2 py-0.5 rounded-full ${risk.className}`}
-                      >
-                        {risk.label}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })
-          ) : (
-            <p className="text-center text-gray-500 py-4">최근 분석 결과가 없습니다.</p>
-          )}
-        </div>
+      {/* ▼▼▼ 기존 '최근 분석 결과' 섹션을 지도와 목록으로 교체 ▼▼▼ */}
+      <div className="border rounded-lg p-3 bg-white shadow-sm">
+        <h2 className="text-lg font-bold mb-3 text-black">긴급 발생 지역 및 {riskLevelLabel} 목록</h2>
+        {loading ? (
+            <div className="flex justify-center items-center h-[500px]">
+                <p className="text-gray-600">지도와 목록을 불러오는 중입니다...</p>
+            </div>
+        ) : (
+            <div className="flex flex-col md:flex-row gap-4">
+                <RiskRankMap
+                    seniors={riskSeniors}
+                    selectedSenior={selectedSenior}
+                    mapCenter={mapCenter}
+                    onMarkerClick={handleSeniorSelect}
+                    onCloseOverlay={handleCloseOverlay}
+                />
+                <RiskRankList
+                    seniors={riskSeniors}
+                    selectedSeniorId={selectedSenior?.overall_result_id || null}
+                    onSeniorSelect={handleSeniorSelect}
+                    riskLevelLabel={riskLevelLabel}
+                />
+            </div>
+        )}
       </div>
     </div>
   );

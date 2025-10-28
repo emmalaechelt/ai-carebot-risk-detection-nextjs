@@ -1,45 +1,32 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect } from 'react';
 
-/**
- * Kakao 지도 SDK 스크립트 로드 상태를 관리하는 커스텀 훅
- * KakaoMapLoader와 연동되어 지도 로드 완료 시점 제어
- */
-export function useKakaoMapScript() {
-  const [isLoaded, setIsLoaded] = useState(false);
+const KAKAO_MAP_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
 
+export default function useKakaoMapScript() {
   useEffect(() => {
-    // 이미 window.kakao가 존재하면 즉시 로드 완료로 설정
-    if (typeof window !== "undefined" && window.kakao && window.kakao.maps) {
-      setIsLoaded(true);
+    // 'declare global' 부분이 완전히 삭제되었습니다.
+    // 타입 정의가 설치되어 이제 window.kakao를 직접 인식합니다.
+    if (window.kakao && window.kakao.maps) {
       return;
     }
 
-    const scriptId = "kakao-map-sdk";
-    const existingScript = document.getElementById(scriptId);
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_APP_KEY}&libraries=services&autoload=false`;
+    script.async = true;
 
-    // 기존 스크립트가 없으면 새로 추가
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&libraries=services&autoload=false`;
-      script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        console.log('Kakao Map script loaded successfully.');
+      });
+    };
 
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          setIsLoaded(true);
-        });
-      };
+    script.onerror = () => {
+      console.error('Failed to load the Kakao Map script.');
+    };
 
-      document.head.appendChild(script);
-    } else {
-      // 이미 스크립트가 있으면 로드 완료 여부 확인
-      if (window.kakao && window.kakao.maps) {
-        setIsLoaded(true);
-      }
-    }
+    document.head.appendChild(script);
+
   }, []);
-
-  return { isLoaded, setLoaded: setIsLoaded };
 }

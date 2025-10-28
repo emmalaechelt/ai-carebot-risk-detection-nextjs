@@ -5,7 +5,7 @@ export interface Member {
   enabled: boolean;
 }
 
-// --- 페이징 응답 ---
+// --- 페이징 응답 (목록 조회 API 공통) ---
 export interface PagedResponse<T> {
   content: T[];
   page_number: number;
@@ -16,11 +16,14 @@ export interface PagedResponse<T> {
   is_first: boolean;
 }
 
-// --- 시니어 상태 타입 ---
+// --- 시니어 관련 공통 타입 ---
 export type SeniorState = "POSITIVE" | "DANGER" | "CRITICAL" | "EMERGENCY";
 export type SeniorSex = "MALE" | "FEMALE";
 
-// [수정] Residence 타입을 이미지에 맞게 enum으로 변경
+// 리스크 레벨 타입 (문자열 리터럴 타입), SeniorState와 동일하지만 용도 구분을 위해 정의
+export type RiskLevel = SeniorState;
+
+// 거주 형태 Enum
 export enum Residence {
   SINGLE_FAMILY_HOME = '단독주택',
   MULTIPLEX_HOUSING = '다세대주택',
@@ -28,12 +31,12 @@ export enum Residence {
   APARTMENT = '아파트',
 }
 
-// --- 시니어 상세 정보 ---
+// --- 시니어 상세 정보 (GET /seniors/{id}) ---
 export interface Senior {
   id: number;
   doll_id: string;
   name: string;
-  birth_date: string;
+  birth_date: string; // "YYYY-MM-DD"
   sex: SeniorSex;
   phone: string;
   address: string;
@@ -47,7 +50,7 @@ export interface Senior {
   guardian_phone: string;
   guardian_note?: string;
   note?: string;
-  photo: string | null;
+  photo: string | null; // photo_url
   recent_overall_results?: {
     id: number;
     label: SeniorState;
@@ -56,7 +59,7 @@ export interface Senior {
   }[];
 }
 
-// --- 시니어 목록 조회용 축약 정보 ---
+// --- 시니어 목록 조회용 축약 정보 (GET /seniors) ---
 export interface SeniorListView {
   senior_id: number;
   name: string;
@@ -70,21 +73,21 @@ export interface SeniorListView {
   created_at: string; // "YYYY-MM-DDTHH:mm:ss"
 }
 
-// --- 긴급 분석 결과 ---
+// --- 긴급 분석 결과 (대시보드 API 내 사용) ---
 export interface UrgentResult {
   overall_result_id: number;
   label: SeniorState;
-  senior_name: string; // 'name' 대신 'senior_name' 사용
+  senior_name: string;
   age: number;
   sex: SeniorSex;
   gu: string;
   dong: string;
   summary: string;
-  treatment_plan: string; // treatment_plan 필드 추가
+  treatment_plan?: string; // API 명세서에 따라 optional 처리
   timestamp: string;
 }
 
-// --- 대시보드 ---
+// --- 대시보드 (GET /dashboard) ---
 export interface DashboardData {
   state_count: {
     total: number;
@@ -92,11 +95,20 @@ export interface DashboardData {
     danger: number;
     critical: number;
     emergency: number;
+    [key: string]: number; // 문자열 키로 접근할 수 있도록 인덱스 서명 추가
   };
   recent_urgent_results: UrgentResult[];
 }
 
-// --- 인형 목록 조회용 축약 정보 ---
+// --- 지도 및 목록 컴포넌트에서 사용할 확장된 시니어 타입 ---
+// UrgentResult 타입을 기반으로, 지도 좌표(lat, lng)와 호환성 필드(name)를 추가합니다.
+export interface RiskSenior extends UrgentResult {
+  name?: string;  // 다른 API 응답 필드와의 호환성을 위함
+  lat?: number;   // 주소 변환 후 추가될 위도
+  lng?: number;   // 주소 변환 후 추가될 경도
+}
+
+// --- 인형 목록 조회용 축약 정보 (GET /dolls) ---
 export interface DollListView {
   id: string;              // 인형의 고유 ID
   senior_id: number | null; // 할당된 시니어 ID (없으면 null)
