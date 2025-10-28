@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { DashboardData, UrgentResult } from "@/types/index";
 import Link from "next/link";
+import EmergencyMap from "@/components/common/EmergencyMap";
 
 // ✨ 스켈레톤 컴포넌트
 function DashboardSkeleton() {
