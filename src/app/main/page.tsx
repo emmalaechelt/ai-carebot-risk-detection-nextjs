@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import StatusSummary from '@/components/common/StatusSummary';
 import RiskRankMap from '@/components/common/RiskRankMap';
 import RiskRankList from '@/components/common/RiskRankList';
-import { DashboardData, DashboardSenior, RiskLevel } from '@/types';
+import { DashboardSenior, RiskLevel, DashboardData, SeniorsByState } from '@/types';
 
 // 대전 중심 좌표
 const DEFAULT_MAP_CENTER = { lat: 36.3504, lng: 127.3845 };
@@ -14,12 +15,13 @@ const DEFAULT_MAP_CENTER = { lat: 36.3504, lng: 127.3845 };
 function DashboardSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg p-4 bg-white shadow-sm animate-pulse h-40"></div>
+      <div className="border rounded-lg p-4 bg-white shadow-sm animate-pulse h-36"></div>
       <div className="border rounded-lg p-3 bg-white shadow-sm animate-pulse h-[500px]"></div>
     </div>
   );
 }
 
+// 리스크 레이블 한글 맵
 const RISK_LABEL_MAP: Record<RiskLevel, string> = {
   EMERGENCY: '긴급',
   CRITICAL: '위험',
@@ -27,8 +29,15 @@ const RISK_LABEL_MAP: Record<RiskLevel, string> = {
   POSITIVE: '안전',
 };
 
+// DashboardData 확장: 상태별 그룹화 포함
+interface DashboardDataWithState extends Omit<DashboardData, 'recent_urgent_results'> {
+  recent_urgent_results: DashboardSenior[];
+  seniors_by_state: SeniorsByState;
+}
+
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const router = useRouter();
+  const [data, setData] = useState<DashboardDataWithState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +45,34 @@ export default function DashboardPage() {
   const [selectedSenior, setSelectedSenior] = useState<DashboardSenior | null>(null);
   const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
 
-  // SSE/알림과는 별개로 초기 대시보드 데이터 fetch
+  // 초기 데이터 fetch
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const response = await api.get<DashboardData>('/dashboard');
-        setData(response.data);
+        const dashboardData = response.data;
+
+        // 상태별 그룹화
+        const seniorsByState: SeniorsByState = {
+          EMERGENCY: [],
+          CRITICAL: [],
+          DANGER: [],
+          POSITIVE: [],
+        };
+        (dashboardData.recent_urgent_results || []).forEach((senior) => {
+          const label = senior.label as RiskLevel;
+          if (seniorsByState[label]) seniorsByState[label].push(senior);
+        });
+
+        // 최신순 정렬
+        Object.keys(seniorsByState).forEach((key) => {
+          seniorsByState[key as RiskLevel].sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+        });
+
+        setData({ ...dashboardData, seniors_by_state: seniorsByState });
       } catch {
         setError('대시보드 데이터를 불러오는 데 실패했습니다.');
       } finally {
@@ -52,15 +82,13 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  // 선택된 레벨 기준 필터링
   const filteredSeniors = useMemo(() => {
     if (!data) return [];
-    const seniors = data.seniors_by_state[selectedLevel] || [];
-    return [...seniors].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    return data.seniors_by_state[selectedLevel] || [];
   }, [data, selectedLevel]);
 
-  // 선택한 시니어가 필터링 목록에 없으면 선택 해제
+  // 선택된 시니어가 목록에 없으면 해제
   useEffect(() => {
     if (selectedSenior && !filteredSeniors.some(s => s.senior_id === selectedSenior.senior_id)) {
       setSelectedSenior(null);
@@ -78,13 +106,24 @@ export default function DashboardPage() {
     }
   }, [selectedSenior, filteredSeniors]);
 
+  // 레벨 선택
   const handleLevelSelect = (level: RiskLevel) => {
     setSelectedLevel(level);
     setSelectedSenior(null);
   };
 
+  // 시니어 선택
   const handleSeniorSelect = (senior: DashboardSenior) => {
+    if (!senior) return;
     setSelectedSenior(senior);
+  };
+
+  // InfoWindow 클릭 처리
+  const handleInfoWindowClick = (senior?: DashboardSenior) => {
+    if (!senior) return;
+    const resultId = senior.overall_result_id;
+    if (!resultId) return;
+    router.push(`/analysis/${resultId}/page`);
   };
 
   if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
@@ -107,6 +146,7 @@ export default function DashboardPage() {
           selectedSenior={selectedSenior}
           mapCenter={mapCenter}
           onMarkerClick={handleSeniorSelect}
+          onInfoWindowClick={handleInfoWindowClick}
         />
         <RiskRankList
           seniors={filteredSeniors}

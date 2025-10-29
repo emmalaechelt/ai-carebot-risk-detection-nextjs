@@ -112,7 +112,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // 전체 읽음 처리
   const markAllAsRead = async () => {
     try {
-      await api.post('/notifications/read-all');
+      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -123,7 +123,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // 전체 삭제
   const clearNotifications = async () => {
     try {
-      await api.delete('/notifications/clear');
+      await api.delete('/notifications');
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
