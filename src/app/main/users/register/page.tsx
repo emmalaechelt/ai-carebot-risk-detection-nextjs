@@ -1,67 +1,33 @@
-// app/register/page.tsx
+// src/app/register/page.tsx 혹은 적절한 경로
 'use client';
 
-import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import axios from "axios";
-import api from "@/lib/api";
-import { Residence, SeniorSex } from "@/types";
-import { geocodeAddress } from "@/utils/geocode";
+import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import axios from 'axios';
+import api from '@/lib/api';
+import { Residence, SeniorSex } from '@/types';
+import { geocodeAddress } from '@/utils/geocode';
 
-interface KakaoMapWindow extends Window {
-  daum: {
-    Postcode: new (options: any) => any;
-  };
-  kakao: {
-    maps: {
-      Map: new (container: HTMLElement, options: { center: { lat: number; lng: number }; level: number }) => kakao.maps.Map;
-      LatLng: new (lat: number, lng: number) => { getLat: () => number; getLng: () => number };
-      Marker: new (options: { position: { lat: number; lng: number }; map?: kakao.maps.Map }) => kakao.maps.Marker;
-      InfoWindow: new (options: { content: string }) => kakao.maps.InfoWindow;
-      event: {
-        addListener: (target: any, type: string, handler: () => void) => void;
-      };
-    };
-  };
+interface DaumPostData {
+  zonecode: string;
+  roadAddress: string;
+  sigungu: string;
+  bname: string;
 }
-
-const isValidDate = (y: number, m: number, d: number): boolean => {
-  const date = new Date(y, m - 1, d);
-  const today = new Date();
-  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d && date <= today;
-};
-
-const calculateAge = (birthDate: string): number | null => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
-  const birth = new Date(birthDate);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
-};
-
-const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
-const residenceOptions: { key: string; value: string }[] = [
-  { key: "SINGLE_FAMILY_HOME", value: "단독주택" },
-  { key: "MULTIPLEX_HOUSING", value: "다세대주택" },
-  { key: "MULTI_FAMILY_HOUSING", value: "다가구주택" },
-  { key: "APARTMENT", value: "아파트" },
-];
 
 interface FormState {
   doll_id: string;
   name: string;
   birth_date: string;
-  sex: SeniorSex | "";
+  sex: SeniorSex | '';
   phone: string;
   zip_code: string;
   address: string;
   address_detail: string;
   gu: string;
   dong: string;
-  residence: Residence | "";
+  residence: Residence | '';
   status: string;
   diseases: string;
   medications: string;
@@ -75,37 +41,63 @@ interface FormState {
   lng: number;
 }
 
+const isValidDate = (y: number, m: number, d: number): boolean => {
+  const date = new Date(y, m - 1, d);
+  const today = new Date();
+  return date.getFullYear() === y
+    && date.getMonth() === m - 1
+    && date.getDate() === d
+    && date <= today;
+};
+
+const calculateAge = (birthDate: string): number | null => {
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+};
+
+const relationshipOptions = ['자녀', '배우자', '부모', '형제자매', '친척', '기타'];
+const residenceOptions: { key: string; value: string }[] = [
+  { key: 'SINGLE_FAMILY_HOME', value: '단독주택' },
+  { key: 'MULTIPLEX_HOUSING', value: '다세대주택' },
+  { key: 'MULTI_FAMILY_HOUSING', value: '다가구주택' },
+  { key: 'APARTMENT', value: '아파트' },
+];
+
 export default function UserRegisterPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
   const [form, setForm] = useState<FormState>({
-    doll_id: "",
-    name: "",
-    birth_date: "",
-    sex: "",
-    phone: "",
-    zip_code: "",
-    address: "",
-    address_detail: "",
-    gu: "",
-    dong: "",
-    residence: "",
-    status: "정상",
-    diseases: "",
-    medications: "",
-    disease_note: "",
-    guardian_name: "",
-    relationship: "",
-    guardian_phone: "",
-    guardian_note: "",
-    note: "",
+    doll_id: '',
+    name: '',
+    birth_date: '',
+    sex: '',
+    phone: '',
+    zip_code: '',
+    address: '',
+    address_detail: '',
+    gu: '',
+    dong: '',
+    residence: '',
+    status: '정상',
+    diseases: '',
+    medications: '',
+    disease_note: '',
+    guardian_name: '',
+    relationship: '',
+    guardian_phone: '',
+    guardian_note: '',
+    note: '',
     lat: 0,
     lng: 0,
   });
 
-  const [birth, setBirth] = useState({ year: "", month: "", day: "" });
+  const [birth, setBirth] = useState({ year: '', month: '', day: '' });
   const [age, setAge] = useState<number | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -119,39 +111,48 @@ export default function UserRegisterPage() {
 
   // --- 다음 우편번호 스크립트 로드 ---
   useEffect(() => {
-    const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    const scriptUrl = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
     if (document.querySelector(`script[src="${scriptUrl}"]`)) {
       setIsScriptLoaded(true);
       return;
     }
-    const script = document.createElement("script");
+    const script = document.createElement('script');
     script.src = scriptUrl;
     script.async = true;
     script.onload = () => setIsScriptLoaded(true);
     document.head.appendChild(script);
   }, []);
 
-  // --- Kakao 지도 초기화 ---
+  // --- Kakao 지도 초기화 및 마커 표시 ---
   useEffect(() => {
-    if (!mapRef.current || form.lat === 0 || form.lng === 0 || !(Window as KakaoMapWindow).kakao) return;
-    const { kakao } = window as KakaoMapWindow;
+    if (!mapRef.current || form.lat === 0 || form.lng === 0) return;
+    if (!window.kakao || !window.kakao.maps) return;
 
-    const center = new kakao.maps.LatLng(form.lat, form.lng);
-    const map = new kakao.maps.Map(mapRef.current, {
+    const center = new window.kakao.maps.LatLng(form.lat, form.lng);
+    const map = new window.kakao.maps.Map(mapRef.current, {
       center,
       level: 3,
     });
     mapInstanceRef.current = map;
 
-    const marker = new kakao.maps.Marker({ position: center, map });
+    // 기존 마커 제거
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
+      markerRef.current = null;
+    }
+
+    const marker = new window.kakao.maps.Marker({
+      position: center,
+      map: map,
+    });
     markerRef.current = marker;
 
-    const infoWindow = new kakao.maps.InfoWindow({
+    const infoWindow = new window.kakao.maps.InfoWindow({
       content: `<div style="padding:5px;font-size:12px;">${form.name} (${form.birth_date})</div>`,
     });
     infoWindow.open(map, marker);
     infoWindowRef.current = infoWindow;
-  }, [form.lat, form.lng]);
+  }, [form.lat, form.lng, form.name, form.birth_date]);
 
   // --- 생년월일 → 나이 계산 ---
   useEffect(() => {
@@ -161,73 +162,88 @@ export default function UserRegisterPage() {
       const m = parseInt(month, 10);
       const d = parseInt(day, 10);
       if (isValidDate(y, m, d)) {
-        const full = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const full = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         setForm((prev) => ({ ...prev, birth_date: full }));
         setAge(calculateAge(full));
       } else {
-        setForm((prev) => ({ ...prev, birth_date: "" }));
+        setForm((prev) => ({ ...prev, birth_date: '' }));
         setAge(null);
       }
     } else {
-      setForm((prev) => ({ ...prev, birth_date: "" }));
+      setForm((prev) => ({ ...prev, birth_date: '' }));
       setAge(null);
     }
   }, [birth]);
 
   // --- 폼 change handler ---
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const handleBirthChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setBirth((prev) => ({ ...prev, [e.target.name]: e.target.value.replace(/\D/g, "") }));
+  const handleBirthChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBirth((prev) => ({ ...prev, [name]: value.replace(/\D/g, '') }));
+  };
 
   const handleBirthBlur = (e: FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (!value) return;
     const num = parseInt(value, 10);
     let newValue = value;
-    if (name === "month") newValue = String(Math.max(1, Math.min(12, num))).padStart(2, "0");
-    if (name === "day") newValue = String(Math.max(1, Math.min(31, num))).padStart(2, "0");
-    if (newValue !== value) setBirth((prev) => ({ ...prev, [name]: newValue }));
+    if (name === 'month') newValue = String(Math.max(1, Math.min(12, num))).padStart(2, '0');
+    if (name === 'day') newValue = String(Math.max(1, Math.min(31, num))).padStart(2, '0');
+    if (newValue !== value) {
+      setBirth((prev) => ({ ...prev, [name]: newValue }));
+    }
   };
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const formatted = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, "$1-$2-$3").slice(0, 13);
+    const formatted = value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, '$1-$2-$3')
+      .slice(0, 13);
     setForm((prev) => ({ ...prev, [name]: formatted }));
   };
 
-  // --- 주소 검색 & 좌표 변환 ---
+  // --- 주소 검색 및 좌표 변환 ---
   const handleZipSearch = async () => {
-    if (!isScriptLoaded || !(window as KakaoMapWindow).daum?.Postcode) {
-      alert("주소 검색 스크립트가 아직 로드되지 않았습니다.");
+    if (!isScriptLoaded || !window.daum?.Postcode) {
+      alert('주소 검색 스크립트가 아직 로드되지 않았습니다.');
       return;
     }
-    const Postcode = (window as KakaoMapWindow).daum.Postcode;
-
+    const Postcode = window.daum.Postcode;
     new Postcode({
-      oncomplete: async (data: any) => {
+      oncomplete: async (data: DaumPostData) => {
         setForm((prev) => ({
           ...prev,
-          zip_code: data.zonecode || "",
-          address: data.roadAddress || "",
-          gu: data.sigungu || "",
-          dong: data.bname || "",
+          zip_code: data.zonecode || '',
+          address: data.roadAddress || '',
+          gu: data.sigungu || '',
+          dong: data.bname || '',
         }));
         addressDetailRef.current?.focus();
 
-        const coords = await geocodeAddress(data.roadAddress || "");
-        if (coords) setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+        const coords = await geocodeAddress(data.roadAddress || '');
+        if (coords) {
+          setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+        }
       },
     }).open();
   };
 
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
+    const file = e.target.files?.[0] ?? null;
+    if (file) {
       setPhotoFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result as string);
+      reader.onloadend = () => {
+        const result = reader.result;
+        if (typeof result === 'string') {
+          setPhotoPreview(result);
+        }
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -251,21 +267,19 @@ export default function UserRegisterPage() {
       form.guardian_phone,
       form.relationship,
     ];
-    if (required.some((v) => !v)) {
-      alert("필수 항목(*)을 모두 입력해주세요.");
+    if (required.some((v) => v === '' || v === null || v === undefined)) {
+      alert('필수 항목(*)을 모두 입력해주세요.');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const dollRes = await api.get(`/dolls/${form.doll_id.trim()}`);
       if (!dollRes.data) {
-        alert("해당 인형이 존재하지 않습니다.");
+        alert('해당 인형이 존재하지 않습니다.');
         setIsSubmitting(false);
         return;
       }
-
       if (dollRes.data.senior_assigned) {
         alert(`해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.`);
         setIsSubmitting(false);
@@ -274,37 +288,40 @@ export default function UserRegisterPage() {
 
       const seniorPayload = { ...form };
       const formData = new FormData();
-      formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
-      if (photoFile) formData.append("photo", photoFile);
+      formData.append('senior', new Blob([JSON.stringify(seniorPayload)], { type: 'application/json' }));
+      if (photoFile) formData.append('photo', photoFile);
 
-      await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
-      alert("이용자 등록 완료!");
-      router.push("/main/users/view");
+      await api.post('/seniors', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      alert('이용자 등록 완료!');
+      router.push('/main/users/view');
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
         const serverMsg = err.response?.data?.message;
-        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n${serverMsg || ""}`);
-        else if (status === 401) alert("인증이 만료되었습니다. 다시 로그인 해주세요.");
-        else if (status === 403) alert("수정 권한이 없습니다.");
-        else if (status === 404) alert("이용자 정보를 찾을 수 없습니다.");
-        else if (status === 409) alert("이미 등록된 인형 또는 중복 데이터가 존재합니다.");
-        else if (status === 500) alert("서버 내부 오류가 발생했습니다.");
-        else alert(serverMsg || "알 수 없는 오류가 발생했습니다.");
+        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n${serverMsg || ''}`);
+        else if (status === 401) alert('인증이 만료되었습니다. 다시 로그인 해주세요.');
+        else if (status === 403) alert('수정 권한이 없습니다.');
+        else if (status === 404) alert('이용자 정보를 찾을 수 없습니다.');
+        else if (status === 409) alert('이미 등록된 인형 또는 중복 데이터가 존재합니다.');
+        else if (status === 500) alert('서버 내부 오류가 발생했습니다.');
+        else alert(serverMsg || '알 수 없는 오류가 발생했습니다.');
       } else {
-        alert("알 수 없는 오류가 발생했습니다.");
+        alert('알 수 없는 오류가 발생했습니다.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
-  const tableBorderClass = "border-gray-400";
-  const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
-  const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center`;
-  const tdClass = `border ${tableBorderClass} p-2`;
-  const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
+  const sectionTitleClass = 'text-lg font-semibold text-gray-800 mb-1.5';
+  const tableBorderClass = 'border-gray-400';
+  const tableClass = `w-full border‑collapse text-sm border ${tableBorderClass}`;
+  const thClass = `border ${tableBorderClass} bg-gray‑50 font‑medium p‑2 text‑center`;
+  const tdClass = `border ${tableBorderClass} p‑2`;
+  const inputClass = 'border border-gray‑300 rounded px‑2 py‑1.5 focus:outline‑none focus:ring‑2 focus:ring‑blue‑300 text‑sm';
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
 
   return (
