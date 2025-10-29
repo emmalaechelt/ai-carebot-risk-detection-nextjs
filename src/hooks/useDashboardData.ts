@@ -1,10 +1,10 @@
 // src/hooks/useDashboardData.ts
-
 import useSWR from 'swr';
-import api from '@/lib/api';
 import { useMemo } from 'react';
-import type { DashboardData, SeniorsByState, DashboardSenior } from '@/types';
+import api from '@/lib/api';
+import type { DashboardData, SeniorsByState, RiskLevel } from '@/types';
 
+// SWR에 사용할 fetcher 함수
 const fetcher = (url: string) => api.get<DashboardData>(url).then(res => res.data);
 
 interface ProcessedDashboardData {
@@ -14,17 +14,16 @@ interface ProcessedDashboardData {
 
 export function useDashboardData() {
   const { data, error, isLoading } = useSWR<DashboardData>('/dashboard', fetcher, {
-    refreshInterval: 60000,
+    refreshInterval: 60000, // 60초마다 데이터 자동 갱신
   });
 
   const processedData: ProcessedDashboardData | null = useMemo(() => {
-    // ✅ [핵심 수정] 
-    // data가 존재하고, data.recent_urgent_results가 배열인지까지 확인합니다.
-    // 이렇게 하면 초기 렌더링 시 data가 undefined일 때 오류가 발생하지 않습니다.
+    // data가 없거나, recent_urgent_results가 배열이 아니면 null 반환
     if (!data || !Array.isArray(data.recent_urgent_results)) {
       return null;
     }
 
+    // 상태별로 시니어 데이터를 그룹화할 초기 객체
     const groupedSeniors: SeniorsByState = {
       EMERGENCY: [],
       CRITICAL: [],
@@ -33,8 +32,18 @@ export function useDashboardData() {
     };
 
     data.recent_urgent_results.forEach(senior => {
-      // senior.label은 항상 RiskLevel 중 하나이므로, 항상 groupedSeniors의 유효한 키가 됩니다.
-      groupedSeniors[senior.label].push(senior);
+      // senior.label (e.g., 'EMERGENCY')을 키로 사용하여 해당 배열에 추가
+      if (groupedSeniors[senior.label]) {
+        groupedSeniors[senior.label].push(senior);
+      }
+    });
+    
+    // 각 그룹을 최신순으로 정렬
+    Object.keys(groupedSeniors).forEach(key => {
+        const level = key as RiskLevel;
+        groupedSeniors[level].sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
     });
 
     return {

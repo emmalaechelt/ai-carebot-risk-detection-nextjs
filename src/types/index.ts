@@ -109,6 +109,8 @@ export interface DashboardSenior {
   treatment_plan?: string;
   timestamp: string;
   is_resolved: boolean;
+  actions?: string;  
+  changes?: string;
 }
 
 export interface DashboardData {
@@ -129,6 +131,7 @@ export interface DashboardData {
 export type SeniorsByState = {
   [key in RiskLevel]: DashboardSenior[];
 };
+
 
 // ----------------------------------------------------------
 // --- 긴급 분석 결과 (대시보드 내 사용) ---
@@ -182,7 +185,8 @@ export type ApiResponse<T> = {
   success: boolean;
   data?: T;
   error?: ApiError;
-};
+}
+
 
 // ----------------------------------------------------------
 // --- API 버전 정보 ---

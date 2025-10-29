@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import KakaoMapContext from "@/contexts/KakaoMapContext";
 import EmergencyToast from "@/components/common/EmergencyToast";
 
 // 로딩 스켈레톤

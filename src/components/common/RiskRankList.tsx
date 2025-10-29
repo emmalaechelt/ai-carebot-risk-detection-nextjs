@@ -1,5 +1,4 @@
 // src/components/common/RiskRankList.tsx
-
 'use client';
 
 import type { DashboardSenior, RiskLevel } from '@/types';

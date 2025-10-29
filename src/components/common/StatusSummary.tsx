@@ -1,5 +1,4 @@
 // src/components/common/StatusSummary.tsx
-
 'use client';
 
 import { RiskLevel } from '@/types';

@@ -1,5 +1,4 @@
 // src/components/common/RiskRankMap.tsx
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -52,13 +51,15 @@ export default function RiskRankMap({ seniors, selectedSenior, mapCenter, onMark
               image={markerImage}
               zIndex={isSelected ? 100 : index}
             >
-              <div style={{
-                padding: '2px 5px', color: '#000', textAlign: 'center', fontWeight: 'bold',
-                fontSize: '12px', background: 'rgba(255, 255, 255, 0.8)',
-                borderRadius: '4px', marginTop: '-35px', border: '1px solid #aaa'
-              }}>
-                {index + 1}
-              </div>
+              {!isSelected && (
+                <div style={{
+                  padding: '2px 5px', color: '#000', textAlign: 'center', fontWeight: 'bold',
+                  fontSize: '12px', background: 'rgba(255, 255, 255, 0.8)',
+                  borderRadius: '4px', marginTop: '-35px', border: '1px solid #aaa'
+                }}>
+                  {index + 1}
+                </div>
+              )}
             </MapMarker>
           );
         })}
