@@ -45,7 +45,7 @@ export enum Residence {
 // --- 시니어 상세 정보 (GET /seniors/{id}) ---
 // ----------------------------------------------------------
 export interface Senior {
-  id: number;
+  senior_id: number;
   doll_id: string;
   name: string;
   birth_date: string; // YYYY-MM-DD
@@ -93,6 +93,50 @@ export interface SeniorListView {
 }
 
 // ----------------------------------------------------------
+// --- 대시보드 데이터 (GET /dashboard) ---
+// ----------------------------------------------------------
+
+// UrgentResult 타입을 대시보드에서 사용하는 시니어 정보의 기본 형태로 확장합니다.
+// 지도 표시에 필수적인 senior_id, latitude, longitude를 포함시킵니다.
+export interface DashboardSenior {
+  overall_result_id: number;
+  senior_id: number; // key, 상세 정보 연결 등에 필수
+  label: SeniorState;
+  name: string; // senior_name 대신 name으로 통일하여 사용
+  age: number;
+  sex: SeniorSex;
+  gu: string;
+  dong: string;
+  latitude: number | null;  // 지도 표시에 필수
+  longitude: number | null; // 지도 표시에 필수
+  summary: string;
+  treatment_plan?: string;
+  timestamp: string; // API 명세서의 recent_urgent_results 필드명 기준
+  is_resolved: boolean;
+}
+
+export interface DashboardData {
+  state_count: {
+    total: number;
+    positive: number;
+    danger: number;
+    critical: number;
+    emergency: number;
+    [key: string]: number;
+  };
+  recent_urgent_results: DashboardSenior[];
+}
+
+// ----------------------------------------------------------
+// --- 프론트엔드 가공 데이터 타입 ---
+// ----------------------------------------------------------
+
+// 대시보드 데이터를 상태별로 그룹화한 객체 타입
+export type SeniorsByState = {
+  [key in RiskLevel]: DashboardSenior[];
+};
+
+// ----------------------------------------------------------
 // --- 긴급 분석 결과 (대시보드 내 사용) ---
 // ----------------------------------------------------------
 export interface UrgentResult {
@@ -107,21 +151,6 @@ export interface UrgentResult {
   treatment_plan?: string; // optional
   timestamp: string;
   is_resolved: boolean;
-}
-
-// ----------------------------------------------------------
-// --- 대시보드 데이터 (GET /dashboard) ---
-// ----------------------------------------------------------
-export interface DashboardData {
-  state_count: {
-    total: number;
-    positive: number;
-    danger: number;
-    critical: number;
-    emergency: number;
-    [key: string]: number; // 인덱스 접근 허용
-  };
-  recent_urgent_results: UrgentResult[];
 }
 
 // ----------------------------------------------------------

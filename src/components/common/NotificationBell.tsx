@@ -2,57 +2,44 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { FaBell } from "react-icons/fa";
+import { FaBell, FaTrashAlt, FaCheckDouble } from "react-icons/fa";
 import { useNotificationContext } from "@/contexts/NotificationContext";
 import type { Notification } from "@/types/notification";
 
 const NotificationBell: React.FC = () => {
   const router = useRouter();
-
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    isBellOpen, 
-    setIsBellOpen 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+    isBellOpen,
+    setIsBellOpen
   } = useNotificationContext();
 
   const handleToggle = () => setIsBellOpen(!isBellOpen);
 
-  // ✅ 3. 알림 항목 클릭 시 실행될 핸들러 함수를 수정합니다.
-  const handleClick = (notification: Notification) => {
-    // 읽지 않은 알림이라면 읽음 상태로 변경합니다.
-    if (!notification.is_read) {
-      markAsRead(notification.notification_id);
-    }
+  const handleClick = (notification: Notification): void => {
+    if (!notification.is_read) markAsRead(notification.notification_id);
 
-    // [핵심 로직] 알림 타입에 따라 적절한 페이지로 이동시킵니다.
     switch (notification.type) {
-      case 'ANALYSIS_COMPLETE':
-        // 알림 타입이 '분석 완료'일 경우, resource_id를 사용하여 분석 상세 페이지로 이동합니다.
+      case "ANALYSIS_COMPLETE":
         router.push(`/main/analysis/${notification.resource_id}`);
         break;
-      
-      case 'SENIOR_STATE_CHANGED':
-        // 예시: 알림 타입이 '시니어 상태 변경'일 경우, 해당 시니어 상세 페이지로 이동할 수 있습니다.
-        // 프로젝트의 URL 구조에 맞게 경로를 설정하세요. (예: /main/users/view/[id])
-        // router.push(`/main/users/view/${notification.resource_id}`);
+      case "SENIOR_STATE_CHANGED":
         console.log(`Senior state changed for senior ID: ${notification.resource_id}. Navigation not implemented yet.`);
         break;
-
       default:
-        // 다른 타입의 알림은 페이지 이동 없이 콘솔에 로그만 남깁니다.
-        console.log(`Navigation is not defined for notification type: ${notification.type}`);
+        console.log(`Navigation 미정: ${notification.type}`);
         break;
     }
 
-    // 페이지 이동 후, 벨 메뉴를 닫습니다.
     setIsBellOpen(false);
   };
 
   return (
     <div className="relative inline-block">
-      {/* 벨 아이콘 */}
       <button
         onClick={handleToggle}
         className="relative bg-transparent border-none cursor-pointer p-2 text-gray-800 hover:text-blue-600 transition-colors"
@@ -65,21 +52,36 @@ const NotificationBell: React.FC = () => {
         )}
       </button>
 
-      {/* 알림 목록 */}
       {isBellOpen && (
         <div className="absolute top-[calc(100%+10px)] right-0 w-[360px] bg-white border border-gray-200 rounded-xl shadow-lg z-50">
-          <div className="px-4 py-2 border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
             <h4 className="text-sm font-semibold text-gray-700">알림</h4>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                  <FaCheckDouble size={12} /> 모두 읽음
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button onClick={clearNotifications} className="text-xs text-red-400 hover:underline flex items-center gap-1 cursor-pointer">
+                  <FaTrashAlt size={12} /> 전체 삭제
+                </button>
+              )}
+            </div>
           </div>
 
           {notifications.length > 0 ? (
             <ul className="max-h-80 overflow-y-auto">
-              {notifications.map((n) => (
+              {notifications.map((n: Notification) => (
                 <li
                   key={n.notification_id}
-                  onClick={() => handleClick(n)} // 수정된 핸들러를 연결합니다.
+                  onClick={() => handleClick(n)}
                   className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                    !n.is_read ? "bg-blue-50" : "bg-white"
+                    !n.is_read
+                      ? n.type === "ANALYSIS_COMPLETE"
+                        ? "bg-blue-50" // 연한 하늘색
+                        : "bg-gray-100" // 다른 읽지 않은 알림
+                      : "bg-white"
                   }`}
                 >
                   <p className="text-gray-800 text-sm">{n.message}</p>

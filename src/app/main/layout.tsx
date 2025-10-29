@@ -49,16 +49,18 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
   if (isLoading || !isAuthenticated) return <AppSkeleton />;
 
+   // 인증된 사용자만 메인 레이아웃을 볼 수 있음
   return (
-    <NotificationProvider>
-      <EmergencyToast />
-      <div className="flex h-screen bg-gray-100">
-        <Sidebar />
-        <main className="flex-1 flex flex-col">
-          <Header username={user?.username || "관리자"} />
-          <div className="flex-1 p-6 overflow-y-auto space-y-6">{children}</div>
-        </main>
-      </div>
-    </NotificationProvider>
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar />
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* ✅ [핵심 수정] username prop을 완전히 제거합니다. */}
+        <Header /> 
+        <div className="flex-1 p-6 overflow-y-auto space-y-6">
+          <EmergencyToast />
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }

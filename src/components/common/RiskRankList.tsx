@@ -1,44 +1,53 @@
+// src/components/common/RiskRankList.tsx
+
 'use client';
 
-// 👇 import 경로를 새로 만든 타입 파일로 변경합니다.
-import type { RiskSenior } from '@/types';
+import type { DashboardSenior, RiskLevel } from '@/types';
 
 interface RiskRankListProps {
-  seniors: RiskSenior[];
+  seniors: DashboardSenior[];
   selectedSeniorId: number | null;
-  onSeniorSelect: (senior: RiskSenior) => void;
-  riskLevelLabel: string;
+  onSeniorSelect: (senior: DashboardSenior) => void;
+  riskLevel: RiskLevel;
 }
+
+const levelConfig: Record<RiskLevel, { label: string }> = {
+  EMERGENCY: { label: '긴급' },
+  CRITICAL: { label: '위험' },
+  DANGER: { label: '주의' },
+  POSITIVE: { label: '안전' },
+};
 
 export default function RiskRankList({
   seniors,
   selectedSeniorId,
   onSeniorSelect,
-  riskLevelLabel,
+  riskLevel,
 }: RiskRankListProps) {
+  const riskLevelLabel = levelConfig[riskLevel].label;
+
   return (
-    // 👇 w-1/3으로 너비를 지정하여 오른쪽에 위치하도록 설정
-    <div className="w-full md:w-1/3 h-96 md:h-[500px] ml-0 md:ml-4 mt-4 md:mt-0 p-3 bg-white rounded-lg shadow-md">
+    <div className="w-full md:w-1/3 h-[600px] ml-0 md:ml-4 mt-4 md:mt-0 p-3 bg-white rounded-lg shadow-xl">
       <h3 className="text-lg font-semibold mb-3 text-gray-800 sticky top-0 bg-white pt-1 pb-2 z-10 border-b">
-        {riskLevelLabel} 순
+        {riskLevelLabel} 목록 (최신순)
       </h3>
       <div className="overflow-y-auto h-[calc(100%-48px)] space-y-3 pr-1">
         {seniors.length > 0 ? (
           seniors.map((senior, index) => (
             <div
-              key={senior.overall_result_id}
+              key={senior.senior_id}
               onClick={() => onSeniorSelect(senior)}
-              className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                selectedSeniorId === senior.overall_result_id
-                  ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-300'
-                  : 'border-gray-200 hover:bg-gray-50'
+              className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                selectedSeniorId === senior.senior_id
+                  ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-300'
+                  : 'border-gray-200 hover:bg-gray-50 hover:border-blue-400'
               }`}
             >
               <div className="flex justify-between items-start mb-1">
-                <span className="font-bold text-base text-gray-800">
-                  {index + 1}. {senior.name || senior.senior_name}
+                <span className="font-bold text-base text-gray-900">
+                  {index + 1}. {senior.name}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 font-medium">
                   ({senior.sex === 'MALE' ? '남' : '여'}, {senior.age}세)
                 </span>
               </div>
@@ -52,7 +61,12 @@ export default function RiskRankList({
           ))
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p className="text-center p-4 text-gray-500">해당 상태의 어르신이 없습니다.</p>
+            <p className="text-center p-4 text-gray-500">
+              {riskLevel === 'POSITIVE'
+                ? "안전 상태의 이용자는 이 목록에 표시되지 않습니다."
+                : `해당 상태의 이용자가 없습니다.`
+              }
+            </p>
           </div>
         )}
       </div>
