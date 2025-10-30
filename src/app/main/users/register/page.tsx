@@ -267,6 +267,8 @@ export default function UserRegisterPage() {
       form.guardian_phone,
       form.relationship,
     ];
+
+    console.log(required)
     if (required.some((v) => v === '' || v === null || v === undefined)) {
       alert('필수 항목(*)을 모두 입력해주세요.');
       return;

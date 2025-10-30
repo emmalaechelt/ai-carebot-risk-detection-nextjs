@@ -1,7 +1,5 @@
-// src/components/common/RiskRankMap.tsx
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Map, MapMarker, CustomOverlayMap } from 'react-kakao-maps-sdk';
 import type { DashboardSenior, RiskLevel } from '@/types';
 
@@ -9,7 +7,11 @@ interface RiskRankMapProps {
   seniors: DashboardSenior[];
   selectedSenior: DashboardSenior | null;
   mapCenter: { lat: number; lng: number };
+  level: number;
   onMarkerClick: (senior: DashboardSenior) => void;
+  onInfoWindowClick: (senior: DashboardSenior) => void;
+  // ✅ [수정됨] 부모로부터 현재 선택된 위험 레벨을 받아 마커 색상을 결정합니다.
+  currentLevel: RiskLevel;
 }
 
 const getMarkerImage = (level: RiskLevel, isSelected: boolean) => {
@@ -31,46 +33,36 @@ export default function RiskRankMap({
   seniors,
   selectedSenior,
   mapCenter,
+  level,
   onMarkerClick,
+  onInfoWindowClick,
+  currentLevel, // ✅ [수정됨] prop 받기
 }: RiskRankMapProps) {
-  const router = useRouter();
-
-  const handleOverlayClick = (senior: DashboardSenior) => {
-    // 상세 분석 페이지로 이동 (page 라우트)
-    router.push(`/analysis/${senior.overall_result_id}/page?senior_id=${senior.senior_id}`);
-  };
-
   return (
-    <div className="w-full md:w-2/3 h-[600px] rounded-lg overflow-hidden shadow-xl relative flex-1">
-      <Map center={mapCenter} style={{ width: '100%', height: '100%' }} level={8} isPanto>
+    <div className="w-full h-full rounded-lg overflow-hidden shadow-xl relative">
+        <Map center={mapCenter} style={{ width: '100%', height: '100%' }} level={level} isPanto>
         {seniors.map((senior, index) => {
-          // 위도/경도 있는 것만 표시
           if (senior.latitude == null || senior.longitude == null) return null;
 
           const isSelected = selectedSenior?.senior_id === senior.senior_id;
-          const markerImage = getMarkerImage(senior.label, isSelected);
+          // ✅ [수정됨] senior 객체에 더 이상 label이 없으므로, prop으로 받은 currentLevel을 사용합니다.
+          const markerImage = getMarkerImage(currentLevel, isSelected);
 
           return (
+            // ✅ [수정됨] key를 새로운 ID 필드명으로 변경합니다.
             <MapMarker
-              key={senior.overall_result_id}
+              key={senior.latest_overall_result_id}
               position={{ lat: senior.latitude, lng: senior.longitude }}
               onClick={() => onMarkerClick(senior)}
               image={markerImage}
               zIndex={isSelected ? 100 : index}
             >
-              {/* 번호 라벨 (선택되지 않았을 때) */}
               {!isSelected && (
                 <div
                   style={{
-                    padding: '2px 5px',
-                    color: '#000',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    background: 'rgba(255, 255, 255, 0.8)',
-                    borderRadius: '4px',
-                    marginTop: '-35px',
-                    border: '1px solid #aaa',
+                    padding: '2px 5px', color: '#000', textAlign: 'center',
+                    fontWeight: 'bold', fontSize: '12px', background: 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: '4px', marginTop: '-35px', border: '1px solid #aaa',
                   }}
                 >
                   {index + 1}
@@ -80,14 +72,14 @@ export default function RiskRankMap({
           );
         })}
 
-        {/* 선택된 시니어에 대해 CustomOverlay 표시 */}
         {selectedSenior && selectedSenior.latitude != null && selectedSenior.longitude != null && (
           <CustomOverlayMap
             position={{ lat: selectedSenior.latitude, lng: selectedSenior.longitude }}
             yAnchor={1.5}
           >
+            {/* ✅ [수정됨] 중복된 div를 제거하고, 부모의 핸들러를 사용하도록 정리했습니다. */}
             <div
-              onClick={() => handleOverlayClick(selectedSenior)}
+              onClick={() => onInfoWindowClick(selectedSenior)}
               className="bg-white rounded-lg shadow-lg p-4 w-80 border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"
             >
               <div className="font-bold text-lg mb-2 text-blue-700">

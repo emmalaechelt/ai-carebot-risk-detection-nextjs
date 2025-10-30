@@ -1,59 +1,24 @@
-// src/hooks/useDashboardData.ts
 import useSWR from 'swr';
-import { useMemo } from 'react';
 import api from '@/lib/api';
-import type { DashboardData, SeniorsByState, RiskLevel } from '@/types';
+// ✅ [수정됨] 더 이상 프론트엔드에서 데이터를 가공하지 않으므로, DashboardData 타입만 필요합니다.
+import type { DashboardData } from '@/types';
 
 // SWR에 사용할 fetcher 함수
 const fetcher = (url: string) => api.get<DashboardData>(url).then(res => res.data);
 
-interface ProcessedDashboardData {
-  state_count: DashboardData['state_count'];
-  seniors_by_state: SeniorsByState;
-}
-
+// ✅ [수정됨] 훅의 반환 타입을 API 응답 타입인 DashboardData | undefined로 직접 사용합니다.
 export function useDashboardData() {
-  const { data, error, isLoading } = useSWR<DashboardData>('/dashboard', fetcher, {
+  const { data, error, isLoading } = useSWR<DashboardData>('/main', fetcher, {
     refreshInterval: 60000, // 60초마다 데이터 자동 갱신
   });
 
-  const processedData: ProcessedDashboardData | null = useMemo(() => {
-    // data가 없거나, recent_urgent_results가 배열이 아니면 null 반환
-    if (!data || !Array.isArray(data.recent_urgent_results)) {
-      return null;
-    }
-
-    // 상태별로 시니어 데이터를 그룹화할 초기 객체
-    const groupedSeniors: SeniorsByState = {
-      EMERGENCY: [],
-      CRITICAL: [],
-      DANGER: [],
-      POSITIVE: [],
-    };
-
-    data.recent_urgent_results.forEach(senior => {
-      // senior.label (e.g., 'EMERGENCY')을 키로 사용하여 해당 배열에 추가
-      if (groupedSeniors[senior.label]) {
-        groupedSeniors[senior.label].push(senior);
-      }
-    });
-    
-    // 각 그룹을 최신순으로 정렬
-    Object.keys(groupedSeniors).forEach(key => {
-        const level = key as RiskLevel;
-        groupedSeniors[level].sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-    });
-
-    return {
-      state_count: data.state_count,
-      seniors_by_state: groupedSeniors,
-    };
-  }, [data]);
+  // ✅ [수정됨] API 응답 구조가 이미 `seniors_by_state`로 그룹화되어 있으므로,
+  // 클라이언트에서 복잡하게 데이터를 재가공하던 `useMemo` 훅이 더 이상 필요 없습니다.
+  // SWR이 반환하는 `data`를 그대로 사용하면 됩니다.
+  // 이로 인해 코드가 훨씬 간결해지고, 불필요한 연산을 줄여 성능이 향상됩니다.
 
   return {
-    data: processedData,
+    data, // SWR이 fetch한 데이터를 그대로 반환합니다.
     isLoading,
     isError: error,
   };
