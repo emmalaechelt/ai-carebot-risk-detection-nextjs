@@ -15,48 +15,64 @@ interface RiskRankMapProps {
 const getMarkerImage = (level: RiskLevel, isSelected: boolean) => {
   const size = isSelected ? { width: 38, height: 52 } : { width: 28, height: 40 };
   const urls: Record<RiskLevel, string> = {
-    EMERGENCY: "http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png",
-    CRITICAL: "http://t1.daumcdn.net/mapjsapi/images/marker_red.png",
-    DANGER: "https://i1.daumcdn.net/dmaps/apis/marker_yellow.png",
-    POSITIVE: "https://i1.daumcdn.net/dmaps/apis/marker_blue.png",
+    EMERGENCY: 'http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+    CRITICAL: 'http://t1.daumcdn.net/mapjsapi/images/marker_red.png',
+    DANGER: 'https://i1.daumcdn.net/dmaps/apis/marker_yellow.png',
+    POSITIVE: 'https://i1.daumcdn.net/dmaps/apis/marker_blue.png',
   };
-  const src = urls[level] || urls.POSITIVE;
+  const src = urls[level];
   if (level === 'EMERGENCY') {
     return { src, size: isSelected ? { width: 34, height: 49 } : { width: 24, height: 35 } };
   }
   return { src, size };
 };
 
-export default function RiskRankMap({ seniors, selectedSenior, mapCenter, onMarkerClick }: RiskRankMapProps) {
+export default function RiskRankMap({
+  seniors,
+  selectedSenior,
+  mapCenter,
+  onMarkerClick,
+}: RiskRankMapProps) {
   const router = useRouter();
 
   const handleOverlayClick = (senior: DashboardSenior) => {
-    router.push(`/analysis/${senior.overall_result_id}?senior_id=${senior.senior_id}`);
+    // 상세 분석 페이지로 이동 (page 라우트)
+    router.push(`/analysis/${senior.overall_result_id}/page?senior_id=${senior.senior_id}`);
   };
 
   return (
     <div className="w-full md:w-2/3 h-[600px] rounded-lg overflow-hidden shadow-xl relative flex-1">
       <Map center={mapCenter} style={{ width: '100%', height: '100%' }} level={8} isPanto>
         {seniors.map((senior, index) => {
-          if (senior.latitude === null || senior.longitude === null) return null;
-          
+          // 위도/경도 있는 것만 표시
+          if (senior.latitude == null || senior.longitude == null) return null;
+
           const isSelected = selectedSenior?.senior_id === senior.senior_id;
           const markerImage = getMarkerImage(senior.label, isSelected);
 
           return (
             <MapMarker
-              key={senior.senior_id}
+              key={senior.overall_result_id}
               position={{ lat: senior.latitude, lng: senior.longitude }}
               onClick={() => onMarkerClick(senior)}
               image={markerImage}
               zIndex={isSelected ? 100 : index}
             >
+              {/* 번호 라벨 (선택되지 않았을 때) */}
               {!isSelected && (
-                <div style={{
-                  padding: '2px 5px', color: '#000', textAlign: 'center', fontWeight: 'bold',
-                  fontSize: '12px', background: 'rgba(255, 255, 255, 0.8)',
-                  borderRadius: '4px', marginTop: '-35px', border: '1px solid #aaa'
-                }}>
+                <div
+                  style={{
+                    padding: '2px 5px',
+                    color: '#000',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: '4px',
+                    marginTop: '-35px',
+                    border: '1px solid #aaa',
+                  }}
+                >
                   {index + 1}
                 </div>
               )}
@@ -64,18 +80,32 @@ export default function RiskRankMap({ seniors, selectedSenior, mapCenter, onMark
           );
         })}
 
-        {selectedSenior && selectedSenior.latitude && selectedSenior.longitude && (
-          <CustomOverlayMap position={{ lat: selectedSenior.latitude, lng: selectedSenior.longitude }} yAnchor={1.5}>
+        {/* 선택된 시니어에 대해 CustomOverlay 표시 */}
+        {selectedSenior && selectedSenior.latitude != null && selectedSenior.longitude != null && (
+          <CustomOverlayMap
+            position={{ lat: selectedSenior.latitude, lng: selectedSenior.longitude }}
+            yAnchor={1.5}
+          >
             <div
               onClick={() => handleOverlayClick(selectedSenior)}
               className="bg-white rounded-lg shadow-lg p-4 w-80 border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"
             >
               <div className="font-bold text-lg mb-2 text-blue-700">
-                {seniors.findIndex(s => s.senior_id === selectedSenior.senior_id) + 1}. {selectedSenior.name}님 정보
+                {`${selectedSenior.name} (${selectedSenior.age}세)`}
               </div>
               <div className="space-y-3 text-sm">
-                <InfoSection title="분석 요약" content={selectedSenior.summary} />
-                <InfoSection title="대처 방안" content={selectedSenior.treatment_plan} />
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-1">분석 요약</h4>
+                  <p className="text-gray-800 bg-gray-50 p-2 rounded text-xs leading-relaxed">
+                    {selectedSenior.summary ?? '정보없음'}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-1">대처 방안</h4>
+                  <p className="text-gray-800 bg-gray-50 p-2 rounded text-xs leading-relaxed">
+                    {selectedSenior.treatment_plan ?? '정보없음'}
+                  </p>
+                </div>
                 <div>
                   <h4 className="font-semibold text-gray-700 mb-1">조치 여부</h4>
                   {selectedSenior.is_resolved ? (
@@ -88,8 +118,8 @@ export default function RiskRankMap({ seniors, selectedSenior, mapCenter, onMark
                     </span>
                   )}
                 </div>
-                 <div className="text-center pt-2 text-blue-600 font-semibold text-xs border-t mt-3">
-                    클릭하여 전체 분석 결과 보기
+                <div className="text-center pt-2 text-blue-600 font-semibold text-xs border-t mt-3">
+                  클릭하여 전체 분석 결과 보기
                 </div>
               </div>
             </div>
@@ -99,12 +129,3 @@ export default function RiskRankMap({ seniors, selectedSenior, mapCenter, onMark
     </div>
   );
 }
-
-const InfoSection = ({ title, content }: { title: string; content?: string }) => (
-  <div>
-    <h4 className="font-semibold text-gray-700 mb-1">{title}</h4>
-    <p className="text-gray-800 bg-gray-50 p-2 rounded text-xs leading-relaxed">
-      {content || '정보가 없습니다.'}
-    </p>
-  </div>
-);

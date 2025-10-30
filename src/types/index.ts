@@ -1,6 +1,6 @@
 // ==========================================================
 // 📘 API 타입 정의 통합 파일 (index.ts)
-// 버전: 1.6.0
+// 버전: 1.7.0
 // 시스템: 고독사 예방 시니어케어 돌봄로봇 데이터 분석 플랫폼
 // ==========================================================
 
@@ -88,7 +88,7 @@ export interface SeniorListView {
   longitude: number;
   doll_id: string;
   phone: string;
-  created_at: string; // ISO 8601 "YYYY-MM-DDTHH:mm:ss"
+  created_at: string; // ISO 8601
 }
 
 // ----------------------------------------------------------
@@ -109,19 +109,21 @@ export interface DashboardSenior {
   treatment_plan?: string;
   timestamp: string;
   is_resolved: boolean;
-  actions?: string;  
-  changes?: string;
+  actions?: string[];
+  changes?: string[];
+}
+
+export interface DashboardStateCount {
+  total: number;
+  positive: number;
+  danger: number;
+  critical: number;
+  emergency: number;
+  [key: string]: number;
 }
 
 export interface DashboardData {
-  state_count: {
-    total: number;
-    positive: number;
-    danger: number;
-    critical: number;
-    emergency: number;
-    [key: string]: number;
-  };
+  state_count: DashboardStateCount;
   recent_urgent_results: DashboardSenior[];
 }
 
@@ -131,7 +133,6 @@ export interface DashboardData {
 export type SeniorsByState = {
   [key in RiskLevel]: DashboardSenior[];
 };
-
 
 // ----------------------------------------------------------
 // --- 긴급 분석 결과 (대시보드 내 사용) ---
@@ -148,6 +149,8 @@ export interface UrgentResult {
   treatment_plan?: string;
   timestamp: string;
   is_resolved: boolean;
+  actions?: string[];
+  changes?: string[];
 }
 
 // ----------------------------------------------------------
@@ -185,13 +188,12 @@ export type ApiResponse<T> = {
   success: boolean;
   data?: T;
   error?: ApiError;
-}
-
+};
 
 // ----------------------------------------------------------
 // --- API 버전 정보 ---
 // ----------------------------------------------------------
-export const API_VERSION = "1.6.0";
+export const API_VERSION = "1.7.0";
 
 // ==========================================================
 // ✅ End of File

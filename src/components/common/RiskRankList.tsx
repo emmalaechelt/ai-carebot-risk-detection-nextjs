@@ -1,74 +1,72 @@
 // src/components/common/RiskRankList.tsx
 'use client';
 
-import type { DashboardSenior, RiskLevel } from '@/types';
+import React from 'react';
+import type { DashboardSenior } from '@/types';
 
-interface RiskRankListProps {
+interface Props {
   seniors: DashboardSenior[];
   selectedSeniorId: number | null;
   onSeniorSelect: (senior: DashboardSenior) => void;
-  riskLevel: RiskLevel;
+  // optional label to show above list
+  riskLevelLabel?: string;
 }
 
-const levelConfig: Record<RiskLevel, { label: string }> = {
-  EMERGENCY: { label: '긴급' },
-  CRITICAL: { label: '위험' },
-  DANGER: { label: '주의' },
-  POSITIVE: { label: '안전' },
-};
-
-export default function RiskRankList({
-  seniors,
-  selectedSeniorId,
-  onSeniorSelect,
-  riskLevel,
-}: RiskRankListProps) {
-  const riskLevelLabel = levelConfig[riskLevel].label;
-
+export default function RiskRankList({ seniors, selectedSeniorId, onSeniorSelect, riskLevelLabel }: Props) {
   return (
-    <div className="w-full md:w-1/3 h-[600px] ml-0 md:ml-4 mt-4 md:mt-0 p-3 bg-white rounded-lg shadow-xl">
-      <h3 className="text-lg font-semibold mb-3 text-gray-800 sticky top-0 bg-white pt-1 pb-2 z-10 border-b">
-        {riskLevelLabel} 목록 (최신순)
-      </h3>
-      <div className="overflow-y-auto h-[calc(100%-48px)] space-y-3 pr-1">
-        {seniors.length > 0 ? (
-          seniors.map((senior, index) => (
-            <div
-              key={senior.senior_id}
-              onClick={() => onSeniorSelect(senior)}
-              className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                selectedSeniorId === senior.senior_id
-                  ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-300'
-                  : 'border-gray-200 hover:bg-gray-50 hover:border-blue-400'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-1">
-                <span className="font-bold text-base text-gray-900">
-                  {index + 1}. {senior.name}
-                </span>
-                <span className="text-xs text-gray-500 font-medium">
-                  ({senior.sex === 'MALE' ? '남' : '여'}, {senior.age}세)
-                </span>
-              </div>
-              <div className="text-sm text-gray-600">
-                위치: {senior.gu} {senior.dong}
-              </div>
-              <div className="text-xs text-gray-400 mt-2 text-right">
-                일시: {new Date(senior.timestamp).toLocaleString('ko-KR')}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-center p-4 text-gray-500">
-              {riskLevel === 'POSITIVE'
-                ? "안전 상태의 이용자는 이 목록에 표시되지 않습니다."
-                : `해당 상태의 이용자가 없습니다.`
-              }
-            </p>
-          </div>
-        )}
+    <div className="md:w-1/3 w-full max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-bold">{riskLevelLabel ?? '긴급순'}</h3>
+        <div className="text-sm text-gray-500">{seniors.length}건</div>
       </div>
+
+      {seniors.length === 0 ? (
+        <div className="text-center text-gray-500 py-10">표시할 데이터가 없습니다.</div>
+      ) : (
+        seniors
+          .slice() // copy
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .map((senior, idx) => {
+            const isSelected = selectedSeniorId === senior.senior_id;
+            return (
+              <article
+                key={senior.overall_result_id}
+                onClick={() => onSeniorSelect(senior)}
+                className={`cursor-pointer p-3 mb-3 rounded-lg border transition ${
+                  isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-100 hover:bg-gray-50'
+                }`}
+                role="button"
+                aria-pressed={isSelected}
+              >
+                <header className="flex justify-between items-start">
+                  <div className="text-sm text-gray-600">#{idx + 1}</div>
+                  <div className="text-right text-xs text-gray-400">{new Date(senior.timestamp).toLocaleString()}</div>
+                </header>
+
+                <div className="mt-1">
+                  <h4 className="font-semibold text-black text-md">{senior.name} <span className="text-sm text-gray-500">({senior.age}세)</span></h4>
+                  <div className="text-sm text-gray-600 mt-1">
+                    {senior.sex} · {senior.gu} {senior.dong}
+                  </div>
+                  <div className="text-sm text-gray-700 mt-2 line-clamp-2 text-xs">
+                    {senior.summary ?? '요약 정보가 없습니다.'}
+                  </div>
+                </div>
+
+                <footer className="mt-3 flex items-center justify-between text-xs">
+                  <div>
+                    {senior.is_resolved ? (
+                      <span className="px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded">조치 완료</span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded">확인 필요</span>
+                    )}
+                  </div>
+                  <div className="text-gray-400">결과ID: {senior.overall_result_id}</div>
+                </footer>
+              </article>
+            );
+          })
+      )}
     </div>
   );
 }
