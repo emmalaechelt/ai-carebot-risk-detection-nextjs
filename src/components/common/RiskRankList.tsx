@@ -7,15 +7,15 @@ interface Props {
   seniors: DashboardSenior[];
   selectedSeniorId: number | null;
   onSeniorSelect: (senior: DashboardSenior) => void;
-  riskLevelLabel?: string;
+  riskLevelLabel?: string; // 선택된 레벨
   currentLevel?: RiskLevel; // 카드 색상 기준
 }
 
-const riskColors: Record<RiskLevel, { text: string; bg: string; border: string }> = {
-  EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-  CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
-  DANGER: { text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
-  POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
+  EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급 최신순' },
+  CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험 최신순' },
+  DANGER: { text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의 최신순' },
+  POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전 최신순' },
 };
 
 export default function RiskRankList({
@@ -24,59 +24,72 @@ export default function RiskRankList({
   onSeniorSelect,
   riskLevelLabel,
 }: Props) {
+  // 선택된 레벨이 있으면 그 레벨 필터, 없으면 전체
+  const selectedLevel = Object.keys(riskColors).find(
+    key => riskColors[key as RiskLevel].label === riskLevelLabel
+  ) as RiskLevel | undefined;
+
+  // 우선순위 정렬: EMERGENCY > CRITICAL > DANGER > POSITIVE
+  const levelPriority: Record<RiskLevel, number> = {
+    EMERGENCY: 0,
+    CRITICAL: 1,
+    DANGER: 2,
+    POSITIVE: 3,
+  };
+
+  const filteredSeniors = seniors
+    .filter(senior => (selectedLevel ? (senior.resolved_label ?? 'POSITIVE') === selectedLevel : true))
+    .slice()
+    .sort((a, b) => {
+      // 먼저 위험 레벨 우선순위
+      const levelA = a.resolved_label ?? 'POSITIVE';
+      const levelB = b.resolved_label ?? 'POSITIVE';
+      if (levelPriority[levelA] !== levelPriority[levelB]) {
+        return levelPriority[levelA] - levelPriority[levelB];
+      }
+      // 같은 레벨이면 최신순
+      return new Date(b.last_state_changed_at).getTime() - new Date(a.last_state_changed_at).getTime();
+    });
+
   return (
     <div className="w-full h-full max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold">{riskLevelLabel ?? '긴급순'}</h3>
-        <div className="text-sm text-gray-500">{seniors.length}건</div>
+        <h3 className="text-lg font-bold">{riskLevelLabel ?? '전체 최신순'}</h3>
+        <div className="text-sm text-gray-500">{filteredSeniors.length}건</div>
       </div>
 
-      {seniors.length === 0 ? (
+      {filteredSeniors.length === 0 ? (
         <div className="text-center text-gray-500 py-10">표시할 데이터가 없습니다.</div>
       ) : (
-        seniors
-          .slice()
-          .sort(
-            (a, b) =>
-              new Date(b.last_state_changed_at).getTime() -
-              new Date(a.last_state_changed_at).getTime()
-          )
-          .map((senior, idx) => {
-            const isSelected = selectedSeniorId === senior.senior_id;
-            const risk = senior.resolved_label ?? 'POSITIVE'; // 없으면 안전(POSITIVE) 처리
-            const color = riskColors[risk];
+        filteredSeniors.map((senior, idx) => {
+          const isSelected = selectedSeniorId === senior.senior_id;
+          const risk = senior.resolved_label ?? 'POSITIVE';
+          const color = riskColors[risk];
 
-            return (
-              <article
-                key={senior.latest_overall_result_id}
-                onClick={() => onSeniorSelect(senior)}
-                className={`cursor-pointer p-3 mb-3 rounded-lg border transition ${
-                  isSelected
-                    ? 'border-blue-300 bg-blue-50'
-                    : `${color.border} ${color.bg} hover:brightness-95`
-                }`}
-                role="button"
-                aria-pressed={isSelected}
-              >
-                <header className="flex justify-between items-start">
-                  <div className="text-sm text-gray-600">#{idx + 1}</div>
-                  <div className="text-right text-xs text-gray-400">
-                    {new Date(senior.last_state_changed_at).toLocaleString()}
-                  </div>
-                </header>
-
-                <div className="mt-1">
-                  <h4 className={`font-semibold text-md ${color.text}`}>
-                    {senior.name}{' '}
-                    <span className="text-sm text-gray-500">({senior.age}세)</span>
-                  </h4>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {senior.sex} · {senior.address}
-                  </div>
+          return (
+            <article
+              key={senior.latest_overall_result_id}
+              onClick={() => onSeniorSelect(senior)}
+              className={`cursor-pointer p-3 mb-3 rounded-lg border transition ${
+                isSelected
+                  ? 'border-blue-300 bg-blue-50'
+                  : `${color.border} ${color.bg} hover:brightness-95`
+              }`}
+              role="button"
+              aria-pressed={isSelected}
+            >
+              <header className="flex justify-between items-start">
+                <div className={`text-sm font-semibold ${color.text}`}>
+                  #{idx + 1} {senior.name} ({senior.age}세) {senior.sex}
                 </div>
-              </article>
-            );
-          })
+                <div className="text-xs text-gray-400">
+                  {new Date(senior.last_state_changed_at).toLocaleString()}
+                </div>
+              </header>
+              <div className="mt-1 text-sm text-gray-600">{senior.address}</div>
+            </article>
+          );
+        })
       )}
     </div>
   );

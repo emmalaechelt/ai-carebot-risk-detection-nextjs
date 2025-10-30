@@ -8,7 +8,7 @@ const fetcher = (url: string) => api.get<DashboardData>(url).then(res => res.dat
 
 // ✅ [수정됨] 훅의 반환 타입을 API 응답 타입인 DashboardData | undefined로 직접 사용합니다.
 export function useDashboardData() {
-  const { data, error, isLoading } = useSWR<DashboardData>('/main', fetcher, {
+  const { data, error, isLoading } = useSWR<DashboardData>('/dashboard', fetcher, {
     refreshInterval: 60000, // 60초마다 데이터 자동 갱신
   });
 
