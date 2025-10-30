@@ -27,6 +27,9 @@ interface DetailData {
     emergency: number;
   };
   dialogues: Dialogue[];
+  is_editable : boolean;
+  is_resolved: boolean;
+  resolved_label: string;
 }
 
 interface Dialogue {
@@ -72,6 +75,7 @@ export default function DetailedAnalysisPage() {
       setLoading(true);
       try {
         const res = await api.get(`/analyze/${id}`);
+        console.log(res.data)
         setData(res.data || null);
       } catch (error) {
         console.error("Failed to fetch detail:", error);
@@ -114,7 +118,11 @@ export default function DetailedAnalysisPage() {
         reason: `관리자가 분석 결과(ID: ${id})를 확인 후 상태를 수동으로 변경했습니다.`
       });
       alert(`이용자의 상태가 '${statusMap[selectedState].text}'(으)로 성공적으로 변경되었습니다.`);
-      router.push('/main');
+        const res = await api.get(`/analyze/${id}`);
+        console.log(res.data)
+        setData(res.data || null);
+      // router.push('/main');
+      // router.refresh();
     } catch (err) {
       console.error("상태 변경 API 호출 실패:", err);
       alert("상태 변경 중 오류가 발생했습니다.");
@@ -236,16 +244,27 @@ export default function DetailedAnalysisPage() {
         <span>나이 : {data.age}세</span>
         <span>인형 ID : {data.doll_id}</span>
       </div>
-
+      
       <div className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
-        <div className="flex items-center">
-          <div
-            className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${
-              statusMap[data.label]?.color || "bg-gray-300"
-            } text-white`}
-          >
-            분석 결과 : {statusMap[data.label]?.text || data.label}
+        <div className="flex">
+          <div className="flex items-center">
+            <div
+              className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${
+                statusMap[data.label]?.color || "bg-gray-300"
+              } text-white`}
+            >
+              분석 결과 : {statusMap[data.label]?.text || data.label}
+            </div>
           </div>
+          {data.is_resolved && <div className="flex items-center">
+            <div
+              className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${
+                statusMap[data.resolved_label]?.color || "bg-gray-300"
+              } text-white`}
+            >
+              조치 결과 : {statusMap[data.resolved_label]?.text || data.resolved_label}
+            </div>
+          </div>}
         </div>
 
         <div className="space-y-2">
@@ -345,7 +364,7 @@ export default function DetailedAnalysisPage() {
         </div>
       </div>
       
-      <div className="border rounded-lg p-4 bg-white shadow-sm">
+      {data?.is_editable && <div className="border rounded-lg p-4 bg-white shadow-sm">
         <h3 className="text-xl font-bold mb-4">조치 완료 결과</h3>
         <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-md">
           <p className="font-semibold text-gray-800">이용자 상태 변경:</p>
@@ -372,7 +391,7 @@ export default function DetailedAnalysisPage() {
             저장
           </button>
         </div>
-      </div>
+      </div>}
 
       <div className="flex justify-center gap-4 mt-3">
         <button
