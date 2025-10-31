@@ -18,10 +18,10 @@ interface RiskRankMapProps {
 
 // 상태별 원색 정의
 const stateColors: Record<RiskLevel, string> = {
-  EMERGENCY: '#FF4C4C', // 빨강
-  CRITICAL: '#FF9900',  // 주황
-  DANGER: '#FFD700',    // 노랑
-  POSITIVE: '#4CAF50',  // 초록
+  EMERGENCY: '#FF4C4C',
+  CRITICAL: '#FF9900',
+  DANGER: '#FFD700',
+  POSITIVE: '#4CAF50',
 };
 
 export default function RiskRankMap({
@@ -35,28 +35,52 @@ export default function RiskRankMap({
   isDashboardView = false,
 }: RiskRankMapProps) {
   const [zoomLevel, setZoomLevel] = useState(level);
-  const [center, setCenter] = useState(mapCenter); // 지도 중심
+  const [center, setCenter] = useState(mapCenter);
   const router = useRouter();
 
-  useEffect(() => {
-    setZoomLevel(level);
-  }, [level]);
+  useEffect(() => setZoomLevel(level), [level]);
 
-  // 선택된 시니어가 바뀌면 지도 중심 이동
+  // 화면 크기 변화 및 카드 클릭 시 중앙
   useEffect(() => {
-    if (selectedSenior && selectedSenior.latitude && selectedSenior.longitude) {
-      setCenter({ lat: selectedSenior.latitude, lng: selectedSenior.longitude });
+    const updateCenter = () => {
+      if (
+        selectedSenior?.latitude !== undefined &&
+        selectedSenior?.longitude !== undefined
+      ) {
+        setCenter({
+          lat: Number(selectedSenior.latitude),
+          lng: Number(selectedSenior.longitude),
+        });
+      } else {
+        setCenter(mapCenter);
+      }
+    };
+    updateCenter();
+    window.addEventListener('resize', updateCenter);
+    return () => window.removeEventListener('resize', updateCenter);
+  }, [selectedSenior?.senior_id, mapCenter.lat, mapCenter.lng]);
+
+  // 카드 클릭 시 확대
+  useEffect(() => {
+    if (
+      selectedSenior?.latitude !== undefined &&
+      selectedSenior?.longitude !== undefined
+    ) {
+      setZoomLevel((prev) => Math.max(prev, 6));
     }
-  }, [selectedSenior]);
+  }, [selectedSenior?.senior_id]);
 
   const shouldShowInfoWindow =
     !isDashboardView &&
-    selectedSenior &&
-    selectedSenior.latitude &&
-    selectedSenior.longitude;
+    selectedSenior?.latitude !== undefined &&
+    selectedSenior?.longitude !== undefined;
 
   const getMarkerSize = (zoom: number) => 24 + (zoom - 5) * 2;
   const getFontSize = (zoom: number) => 12 + Math.floor((zoom - 5) / 2);
+
+  const emergencySeniors = seniors.filter(
+    (s) => s.resolved_label === 'EMERGENCY'
+  );
 
   return (
     <div className="w-full h-full rounded-lg overflow-hidden shadow-xl relative">
@@ -68,34 +92,44 @@ export default function RiskRankMap({
         onZoomChanged={(map) => setZoomLevel(map.getLevel())}
       >
         {seniors.map((senior, idx) => {
-          if (!senior.latitude || !senior.longitude) return null;
+          if (
+            senior.latitude === undefined ||
+            senior.longitude === undefined
+          )
+            return null;
 
           const isSelected = selectedSenior?.senior_id === senior.senior_id;
           const circleSize = getMarkerSize(zoomLevel);
           const fontSize = getFontSize(zoomLevel);
 
+          // 긴급 마커만 번호 표시
+          let indexNumber = 0;
+          if (isDashboardView && senior.resolved_label === 'EMERGENCY') {
+            indexNumber =
+              emergencySeniors.findIndex(
+                (s) => s.senior_id === senior.senior_id
+              ) + 1;
+          }
+
           return (
             <MapMarker
               key={senior.latest_overall_result_id}
               position={{
-                lat: senior.latitude ?? 0,
-                lng: senior.longitude ?? 0,
+                lat: Number(senior.latitude),
+                lng: Number(senior.longitude),
               }}
               zIndex={isSelected ? 100 : idx}
               onClick={() => {
-                if (!isDashboardView) {
-                  onMarkerClick(senior);
-                }
+                if (!isDashboardView) onMarkerClick(senior);
               }}
             >
-              {/* 전체 현황에서만 발생순 번호 표시 */}
-              {isDashboardView && senior.resolved_label === 'EMERGENCY' && (
+              {indexNumber > 0 && (
                 <div
                   style={{
                     width: `${circleSize}px`,
                     height: `${circleSize}px`,
                     borderRadius: '50%',
-                    backgroundColor: stateColors[senior.resolved_label],
+                    backgroundColor: stateColors.EMERGENCY,
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -110,19 +144,18 @@ export default function RiskRankMap({
                     border: '1px solid #fff',
                   }}
                 >
-                  {idx + 1}
+                  {indexNumber}
                 </div>
               )}
             </MapMarker>
           );
         })}
 
-        {/* 카드 클릭 시 네모창 */}
         {shouldShowInfoWindow && (
           <CustomOverlayMap
             position={{
-              lat: selectedSenior.latitude ?? 0,
-              lng: selectedSenior.longitude ?? 0,
+              lat: Number(selectedSenior.latitude),
+              lng: Number(selectedSenior.longitude),
             }}
             yAnchor={1.35}
             xAnchor={0.5}
@@ -137,8 +170,8 @@ export default function RiskRankMap({
                 padding: '4px 8px',
                 whiteSpace: 'pre-line',
                 wordBreak: 'keep-all',
-                minWidth: '400px', // 기본 넓게
-                maxWidth: '90vw',  // 화면 줄어들면 90%까지
+                minWidth: '400px',
+                maxWidth: '90vw',
               }}
             >
               <div className="font-bold text-base mb-1 text-blue-700">
