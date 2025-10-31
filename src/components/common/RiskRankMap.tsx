@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'; // useEffect import 추가
+import { useState, useEffect } from 'react';
 import { Map, MapMarker, CustomOverlayMap } from 'react-kakao-maps-sdk';
 import type { DashboardSenior, RiskLevel } from '@/types';
 
@@ -14,14 +14,6 @@ interface RiskRankMapProps {
   currentLevel: RiskLevel;
   isDashboardView?: boolean; // ✅ 전체 현황 여부
 }
-
-// ✅ public/img 내 마커 이미지 경로
-const markerUrls: Record<RiskLevel, string> = {
-  EMERGENCY: '/img/RedMarker.png',
-  CRITICAL: '/img/OrangeMarker.png',
-  DANGER: '/img/YellowMarker.png',
-  POSITIVE: '/img/GreenMarker.png',
-};
 
 export default function RiskRankMap({
   seniors,
@@ -44,7 +36,7 @@ export default function RiskRankMap({
   const getMarkerSize = (zoom: number) => 24 + (zoom - 5) * 2;
   const getFontSize = (zoom: number) => 12 + Math.floor((zoom - 5) / 2);
 
-  // ✅ [수정] 정보창(말풍선)이 보여야 하는 조건을 명확한 변수로 정의
+  // ✅ 정보창(말풍선) 표시 조건
   const shouldShowInfoWindow =
     !isDashboardView &&
     selectedSenior &&
@@ -70,53 +62,26 @@ export default function RiskRankMap({
           return (
             <MapMarker
               key={senior.latest_overall_result_id}
-              position={{ lat: senior.latitude, lng: senior.longitude }}
-              image={{
-                src: markerUrls[currentLevel],
-                size: { width: 48, height: 52 },
-                options: { offset: { x: 24, y: 52 } },
+              position={{
+                lat: senior.latitude ?? 0,
+                lng: senior.longitude ?? 0,
               }}
               zIndex={isSelected ? 100 : idx}
               onClick={() => {
-                // ✅ 전체 현황(isDashboardView=true)에서는 클릭 이벤트를 막음
                 if (!isDashboardView) {
                   onMarkerClick(senior);
                 }
               }}
-            >
-              {/* ✅ 번호 표시 (마커 위 중앙 정렬) */}
-              <div
-                style={{
-                  width: `${circleSize}px`,
-                  height: `${circleSize}px`,
-                  borderRadius: '50%',
-                  backgroundColor: 'white',
-                  border: '1px solid #aaa',
-                  color: '#000',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  fontSize: `${fontSize}px`,
-                  position: 'absolute',
-                  top: `-${circleSize + 8}px`,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  userSelect: 'none',
-                }}
-              >
-                {idx + 1}
-              </div>
-            </MapMarker>
+            />
           );
         })}
 
-        {/* ✅ [수정] 위에서 정의한 변수를 사용하여 조건부 렌더링 */}
+        {/* ✅ InfoWindow */}
         {shouldShowInfoWindow && (
           <CustomOverlayMap
             position={{
-              lat: selectedSenior.latitude,
-              lng: selectedSenior.longitude,
+              lat: selectedSenior.latitude ?? 0,
+              lng: selectedSenior.longitude ?? 0,
             }}
             yAnchor={1.5}
           >
