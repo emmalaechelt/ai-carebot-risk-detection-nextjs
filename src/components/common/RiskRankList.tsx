@@ -15,8 +15,14 @@ interface Props {
 const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
   EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급' },
   CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험' },
-  DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' }, // 여기만 text-yellow-500
+  DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' },
   POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전' },
+};
+
+// 성별 매핑
+const sexMap: Record<string, string> = {
+  MALE: '남',
+  FEMALE: '여',
 };
 
 export default function RiskRankList({
@@ -78,7 +84,7 @@ export default function RiskRankList({
         <h3 className={`text-lg font-bold ${riskColors[displayLevelColor].text}`}>
           {displayLevelLabel}
         </h3>
-        <div className="text-sm text-gray-500">{filteredSeniors.length}건</div>
+        <div className="text-sm text-gray-600">{filteredSeniors.length}건</div>
       </div>
 
       {filteredSeniors.length === 0 ? (
@@ -88,6 +94,9 @@ export default function RiskRankList({
           const isSelected = selectedSeniorId === senior.senior_id;
           const risk = senior.resolved_label ?? 'POSITIVE';
           const color = riskColors[risk];
+
+          // 성별 한글 변환
+          const sexInKorean = sexMap[senior.sex] ?? senior.sex;
 
           return (
             <article
@@ -102,8 +111,8 @@ export default function RiskRankList({
               aria-pressed={isSelected}
             >
               <header className="flex justify-between items-start">
-                <div className={`text-sm font-semibold ${color.text}`}>
-                  #{idx + 1} {senior.name} ({senior.age}세) {senior.sex}
+                <div className="text-sm font-semibold text-gray-600">
+                  #{idx + 1} {senior.name} ({senior.age}세 / {sexInKorean})
                 </div>
                 <div className="text-xs text-gray-400">
                   {new Date(senior.last_state_changed_at).toLocaleString()}
