@@ -16,7 +16,6 @@ interface RiskRankMapProps {
   isDashboardView?: boolean;
 }
 
-// 상태별 원색 정의
 const stateColors: Record<RiskLevel, string> = {
   EMERGENCY: '#FF4C4C',
   CRITICAL: '#FF9900',
@@ -36,51 +35,65 @@ export default function RiskRankMap({
 }: RiskRankMapProps) {
   const [zoomLevel, setZoomLevel] = useState(level);
   const [center, setCenter] = useState(mapCenter);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const router = useRouter();
 
   useEffect(() => setZoomLevel(level), [level]);
 
-  // 화면 크기 변화 및 카드 클릭 시 중앙
+  // 화면 크기 추적
   useEffect(() => {
-    const updateCenter = () => {
-      if (
-        selectedSenior?.latitude !== undefined &&
-        selectedSenior?.longitude !== undefined
-      ) {
-        setCenter({
-          lat: Number(selectedSenior.latitude),
-          lng: Number(selectedSenior.longitude),
-        });
-      } else {
-        setCenter(mapCenter);
-      }
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     };
-    updateCenter();
-    window.addEventListener('resize', updateCenter);
-    return () => window.removeEventListener('resize', updateCenter);
-  }, [selectedSenior?.senior_id, mapCenter.lat, mapCenter.lng]);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // 카드 클릭 시 확대
+  // 카드 클릭 시 중앙 이동
   useEffect(() => {
     if (
       selectedSenior?.latitude !== undefined &&
       selectedSenior?.longitude !== undefined
     ) {
+      setCenter({
+        lat: Number(selectedSenior.latitude),
+        lng: Number(selectedSenior.longitude),
+      });
       setZoomLevel((prev) => Math.max(prev, 6));
+    } else {
+      setCenter(mapCenter);
     }
-  }, [selectedSenior?.senior_id]);
+  }, [selectedSenior?.senior_id, mapCenter.lat, mapCenter.lng]);
 
   const shouldShowInfoWindow =
     !isDashboardView &&
     selectedSenior?.latitude !== undefined &&
     selectedSenior?.longitude !== undefined;
 
-  const getMarkerSize = (zoom: number) => 24 + (zoom - 5) * 2;
-  const getFontSize = (zoom: number) => 12 + Math.floor((zoom - 5) / 2);
+  const getMarkerSize = () => Math.min(24 + (zoomLevel - 5) * 2, 40);
+  const getFontSize = () => Math.min(12 + Math.floor((zoomLevel - 5) / 2), 16);
+  const getTopOffset = () => {
+    const base = getMarkerSize() + 4;
+    if (windowSize.height < 500) return base + 6;
+    if (windowSize.height < 800) return base + 4;
+    return base;
+  };
 
   const emergencySeniors = seniors.filter(
     (s) => s.resolved_label === 'EMERGENCY'
   );
+
+  // 겹침 방지: 같은 위치 근처면 위로 살짝 이동
+  const getAdjustedTop = (senior: DashboardSenior, idx: number) => {
+    const sameLatLngCount = emergencySeniors.filter(
+      (s, i) =>
+        i < idx &&
+        s.latitude === senior.latitude &&
+        s.longitude === senior.longitude
+    ).length;
+    return getTopOffset() + sameLatLngCount * 12; // 마커 겹침 간격
+  };
 
   return (
     <div className="w-full h-full rounded-lg overflow-hidden shadow-xl relative">
@@ -99,10 +112,9 @@ export default function RiskRankMap({
             return null;
 
           const isSelected = selectedSenior?.senior_id === senior.senior_id;
-          const circleSize = getMarkerSize(zoomLevel);
-          const fontSize = getFontSize(zoomLevel);
+          const circleSize = getMarkerSize();
+          const fontSize = getFontSize();
 
-          // 긴급 마커만 번호 표시
           let indexNumber = 0;
           if (isDashboardView && senior.resolved_label === 'EMERGENCY') {
             indexNumber =
@@ -137,7 +149,7 @@ export default function RiskRankMap({
                     fontWeight: 'bold',
                     fontSize: `${fontSize}px`,
                     position: 'absolute',
-                    top: `-${circleSize + 4}px`,
+                    top: `-${getAdjustedTop(senior, idx)}px`,
                     left: '50%',
                     transform: 'translateX(-50%)',
                     userSelect: 'none',

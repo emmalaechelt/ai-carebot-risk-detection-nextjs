@@ -11,11 +11,12 @@ interface Props {
   currentLevel?: RiskLevel; // 카드 색상 기준
 }
 
+// 위험 레벨별 한글 라벨과 색상
 const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
-  EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급 최신순' },
-  CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험 최신순' },
-  DANGER: { text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의 최신순' },
-  POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전 최신순' },
+  EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급' },
+  CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험' },
+  DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' }, // 여기만 text-yellow-500
+  POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전' },
 };
 
 export default function RiskRankList({
@@ -24,10 +25,27 @@ export default function RiskRankList({
   onSeniorSelect,
   riskLevelLabel,
 }: Props) {
-  // 선택된 레벨이 있으면 그 레벨 필터, 없으면 전체
-  const selectedLevel = Object.keys(riskColors).find(
-    key => riskColors[key as RiskLevel].label === riskLevelLabel
-  ) as RiskLevel | undefined;
+  // 영어 또는 한글 레벨 이름을 한글로 매핑
+  const labelToKorean: Record<string, string> = {
+    EMERGENCY: '긴급',
+    CRITICAL: '위험',
+    DANGER: '주의',
+    POSITIVE: '안전',
+    긴급: '긴급',
+    위험: '위험',
+    주의: '주의',
+    안전: '안전',
+  };
+
+  // 제목에 표시할 레벨
+  const displayLevelLabel = riskLevelLabel
+    ? labelToKorean[riskLevelLabel] ?? '긴급'
+    : '긴급';
+
+  // 글자색 결정
+  const displayLevelColor: RiskLevel = (Object.keys(riskColors).find(
+    key => riskColors[key as RiskLevel].label === displayLevelLabel
+  ) as RiskLevel) ?? 'EMERGENCY';
 
   // 우선순위 정렬: EMERGENCY > CRITICAL > DANGER > POSITIVE
   const levelPriority: Record<RiskLevel, number> = {
@@ -38,23 +56,28 @@ export default function RiskRankList({
   };
 
   const filteredSeniors = seniors
-    .filter(senior => (selectedLevel ? (senior.resolved_label ?? 'POSITIVE') === selectedLevel : true))
+    .filter(senior => {
+      if (!riskLevelLabel) return true;
+      const seniorLabel = senior.resolved_label ?? 'POSITIVE';
+      return labelToKorean[seniorLabel] === displayLevelLabel;
+    })
     .slice()
     .sort((a, b) => {
-      // 먼저 위험 레벨 우선순위
       const levelA = a.resolved_label ?? 'POSITIVE';
       const levelB = b.resolved_label ?? 'POSITIVE';
       if (levelPriority[levelA] !== levelPriority[levelB]) {
         return levelPriority[levelA] - levelPriority[levelB];
       }
-      // 같은 레벨이면 최신순
       return new Date(b.last_state_changed_at).getTime() - new Date(a.last_state_changed_at).getTime();
     });
 
   return (
     <div className="w-full h-full max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold">{riskLevelLabel ?? '전체 최신순'}</h3>
+        {/* 제목: 선택된 상태가 있으면 해당 상태, 없으면 기본 '긴급' */}
+        <h3 className={`text-lg font-bold ${riskColors[displayLevelColor].text}`}>
+          {displayLevelLabel}
+        </h3>
         <div className="text-sm text-gray-500">{filteredSeniors.length}건</div>
       </div>
 
