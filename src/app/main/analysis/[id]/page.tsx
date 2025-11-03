@@ -26,7 +26,7 @@ interface DetailData {
     emergency: number;
   };
   dialogues: Dialogue[];
-  is_editable : boolean;
+  is_editable: boolean;
   is_resolved: boolean;
   resolved_label: string;
 }
@@ -82,7 +82,7 @@ export default function DetailedAnalysisPage() {
     };
     fetchDetail();
   }, [id]);
-  
+
   // ✅ 3. [핵심 수정] 이용자 상태 변경 및 저장 핸들러
   const handleStateSave = async () => {
     if (!selectedState) {
@@ -110,9 +110,9 @@ export default function DetailedAnalysisPage() {
         reason: `관리자가 분석 결과(ID: ${id})를 확인 후 상태를 수동으로 변경했습니다.`
       });
       alert(`이용자의 상태가 '${statusMap[selectedState].text}'(으)로 성공적으로 변경되었습니다.`);
-        const res = await api.get(`/analyze/${id}`);
-        console.log(res.data)
-        setData(res.data || null);
+      const res = await api.get(`/analyze/${id}`);
+      console.log(res.data)
+      setData(res.data || null);
       // router.push('/main');
       // router.refresh();
     } catch (err) {
@@ -231,28 +231,30 @@ export default function DetailedAnalysisPage() {
 
       <div className="border rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 space-x-6">
         <div className="font-bold w-full text-xl">이용자 정보</div>
-        <span>이름 : {data.senior_name}</span>
-        <span>질병 : {data.diseases || "-"}</span>
-        <span>나이 : {data.age}세</span>
-        <span>인형 ID : {data.doll_id}</span>
+        <span>· 이름 : {data.senior_name}</span>
+        <span>· 질병 : {data.diseases || "-"}</span>
+        <span>· 나이 : {data.age}세</span>
+        <span>· 인형 ID : {data.doll_id}</span>
       </div>
-      
+
       <div className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
-        <div className="flex">
+        <div className="flex gap-x-3">
           <div className="flex items-center">
             <div
-              className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${
-                statusMap[data.label]?.color || "bg-gray-300"
-              } text-white`}
+              className={`inline-block text-xl font-bold px-3 py-1.5 rounded-lg ${statusMap[data.label]?.color || "bg-gray-300"
+                } text-white`}
             >
               분석 결과 : {statusMap[data.label]?.text || data.label}
             </div>
           </div>
+
+          {/* 화살표 */}
+          {data.is_resolved && <span className="flex items-center gap-x-4 text-3xl text-gray-700">➜</span>}
+
           {data.is_resolved && <div className="flex items-center">
             <div
-              className={`inline-block text-xl font-bold px-3 py-1.5 rounded ${
-                statusMap[data.resolved_label]?.color || "bg-gray-300"
-              } text-white`}
+              className={`inline-block text-xl font-bold px-3 py-1.5 rounded-lg ${statusMap[data.resolved_label]?.color || "bg-gray-300"
+                } text-white`}
             >
               조치 결과 : {statusMap[data.resolved_label]?.text || data.resolved_label}
             </div>
@@ -261,17 +263,17 @@ export default function DetailedAnalysisPage() {
 
         <div className="space-y-2">
           <div className="flex">
-            <span className="font-bold mr-2 w-20 shrink-0">요약 :</span>
+            <span className="font-bold mr-2 w-12 shrink-0">· 요약 :</span>
             <span>{data.summary}</span>
           </div>
 
           <div className="flex">
-            <span className="font-bold mr-2 w-20 shrink-0">대처 방안 :</span>
+            <span className="font-bold mr-2 w-21 shrink-0">· 대처 방안 :</span>
             <span>{data.treatment_plan?.trim() || "대처 방안 정보가 없습니다."}</span>
           </div>
 
           <div className="flex">
-            <span className="font-bold mr-2 w-20 shrink-0">근거 :</span>
+            <span className="font-bold mr-2 w-12 shrink-0">· 근거 :</span>
             <ul className="space-y-1">
               {(data.reasons || []).map((reason, idx) => (
                 <li key={idx}>{reason}</li>
@@ -355,12 +357,12 @@ export default function DetailedAnalysisPage() {
           </table>
         </div>
       </div>
-      
+
       {data?.is_editable && <div className="border rounded-lg p-4 bg-white shadow-sm">
         <h3 className="text-xl font-bold mb-4">조치 완료 결과</h3>
         <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-md">
-          <p className="font-semibold text-gray-800">이용자 상태 변경:</p>
-          <div className="flex gap-2">
+          <p className="font-semibold text-gray-800">· 이용자 상태 변경 :</p>
+          <div className="flex gap-4">
             {(["CRITICAL", "DANGER", "POSITIVE"] as ActionState[]).map(stateKey => (
               <button
                 key={stateKey}

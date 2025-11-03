@@ -70,13 +70,13 @@ export default function SettingPage() {
 
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-500">
+          <table className="w-full text-center text-sm text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3">아이디 (Username)</th>
-                <th scope="col" className="px-6 py-3">권한 (Role)</th>
-                <th scope="col" className="px-6 py-3">계정 상태 (Enabled)</th>
-                <th scope="col" className="px-6 py-3 text-center">작업</th>
+                <th scope="col" className="px-6 py-3">아이디</th>
+                <th scope="col" className="px-6 py-3">권한</th>
+                <th scope="col" className="px-6 py-3">계정 상태</th>
+                <th scope="col" className="px-6 py-3">작업</th>
               </tr>
             </thead>
             <tbody>
