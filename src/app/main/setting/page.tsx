@@ -48,15 +48,15 @@ export default function SettingPage() {
   };
 
   const handlePasswordChange = async (username: string) => {
-    const newPassword = window.prompt(`'${username}'의 새 비밀번호를 입력하세요:`);
+    const new_password = window.prompt(`'${username}'의 새 비밀번호를 입력하세요:`);
 
-    if (!newPassword || newPassword.trim() === "") {
+    if (!new_password || new_password.trim() === "") {
       alert("비밀번호를 입력해야 합니다.");
       return;
     }
 
     try {
-      await api.patch(`/members/${username}/password`, { newPassword });
+      await api.patch(`/members/${username}/password`, { new_password });
       alert('비밀번호가 성공적으로 변경되었습니다.');
     } catch (err) {
       console.error(`Failed to change password for ${username}:`, err);

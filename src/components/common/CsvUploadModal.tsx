@@ -177,7 +177,7 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             type="button"
             onClick={onClose}
             disabled={isUploading}
-            className={`px-4 py-2 rounded text-base cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-base cursor-pointer ${
               isUploading
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-gray-300 text-black hover:bg-gray-400"
@@ -189,13 +189,13 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             type="button"
             onClick={handleSubmit}
             disabled={isUploading || !file}
-            className={`px-4 py-2 rounded text-base cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-base cursor-pointer ${
               isUploading
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-blue-500 text-white hover:bg-blue-600"
             }`}
           >
-            {isUploading ? "분석 중..." : "분석 요청"}
+            분석 요청
           </button>
         </div>
       </div>

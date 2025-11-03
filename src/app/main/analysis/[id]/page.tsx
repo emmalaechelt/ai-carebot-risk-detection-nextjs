@@ -380,7 +380,7 @@ export default function DetailedAnalysisPage() {
           <button
             onClick={handleStateSave}
             disabled={!selectedState || isSubmitting}
-            className="ml-auto bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="ml-auto bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             저장
           </button>

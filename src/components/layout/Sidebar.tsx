@@ -23,11 +23,11 @@ export default function Sidebar() {
   };
 
   const menuItems: MenuItem[] = [
-    { label: "전체 현황", icon: "🕧", href: "/main" },
-    { label: "이용자 관리", icon: "👨‍👩‍👧‍👦", href: "/main/users/view" },
-    { label: "인형 관리", icon: "🧸", href: "/main/dolls" },
-    { label: "전체 분석 결과", icon: "📋", href: "/main/analysis" },
-    { label: "설정", icon: "⚙", href: "/main/setting" },
+    { label: "전체 현황", icon: "/img/status.png", href: "/main" },
+    { label: "이용자 관리", icon: "/img/users.png", href: "/main/users/view" },
+    { label: "인형 관리", icon: "/img/doll.png", href: "/main/dolls" },
+    { label: "전체 분석 결과", icon: "/img/analysis.png", href: "/main/analysis" },
+    { label: "설정", icon: "/img/setting.png", href: "/main/setting" },
   ];
 
   const renderMenu = (items: MenuItem[], isSubMenu = false): ReactNode => (
@@ -58,7 +58,19 @@ export default function Sidebar() {
                 className={`flex items-center space-x-2 px-2 py-2 rounded-lg transition
                 ${isActive ? "bg-orange-100 text-orange-600 font-semibold" : "hover:bg-orange-50 hover:text-orange-500"}`}
               >
-                {item.icon && <span>{item.icon}</span>}
+                 {item.icon && (
+                item.icon.startsWith("/") ? (
+                  <Image
+                    src={item.icon}
+                    alt={item.label}
+                    width={20}
+                    height={20}
+                    className="w-5 h-5"
+                  />
+                ) : (
+                  <span>{item.icon}</span>
+                )
+              )}
                 <span>{item.label}</span>
               </Link>
             )}

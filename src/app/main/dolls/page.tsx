@@ -130,7 +130,7 @@ export default function DollsPage() {
         <button
           onClick={() => handleDelete(row.original.id)}
           disabled={isSubmitting}
-          className="px-3 py-1 rounded-md text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+          className="px-2 py-1.5 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
         >
           삭제
         </button>

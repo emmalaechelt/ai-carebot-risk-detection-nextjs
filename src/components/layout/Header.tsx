@@ -5,6 +5,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/common/NotificationBell";
+import Image from "next/image";
+
 
 export default function Header() {
   const { user, logout, isLoading } = useAuth();
@@ -38,7 +40,13 @@ export default function Header() {
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center space-x-2 border border-gray-300 rounded-lg px-3 py-2 font-medium text-black hover:bg-gray-50 transition cursor-pointer"
         >
-          <span>👮</span>
+          <Image
+            src="/img/login.png"
+            alt="로그인 사용자"
+            width={24}
+            height={24}
+            className="w-6 h-6 rounded-full"
+          />
           <span>{user.username}</span>
         </button>
 
