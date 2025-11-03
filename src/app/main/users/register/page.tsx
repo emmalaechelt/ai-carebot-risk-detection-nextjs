@@ -1,5 +1,4 @@
-// app/register/page.tsx
-'use client';
+"use client";
 
 import { useState, useEffect, useRef, ChangeEvent, FormEvent, FocusEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -75,7 +74,7 @@ export default function UserRegisterPage() {
     gu: "",
     dong: "",
     residence: "",
-    status: "정상",
+    status: "정상", // 기본값
     diseases: "",
     medications: "",
     disease_note: "",
@@ -154,21 +153,15 @@ export default function UserRegisterPage() {
     setForm((prev) => ({ ...prev, [name]: formatted }));
   };
 
-  // --- 주소 검색 & 좌표 변환 ---
+  // --- 주소 검색 ---
   const handleZipSearch = () => {
     if (!isScriptLoaded || !window.daum?.Postcode) {
       alert("주소 검색 스크립트가 아직 로드되지 않았습니다.");
       return;
     }
     const Postcode = window.daum.Postcode;
-
     new Postcode({
-      oncomplete: async (data: {
-        zonecode: string;
-        roadAddress: string;
-        sigungu: string;
-        bname: string;
-      }) => {
+      oncomplete: async (data: { zonecode: string; roadAddress: string; sigungu: string; bname: string }) => {
         setForm((prev) => ({
           ...prev,
           zip_code: data.zonecode || "",
@@ -244,15 +237,8 @@ export default function UserRegisterPage() {
       router.push("/main/users/view");
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        const status = err.response?.status;
         const serverMsg = err.response?.data?.message;
-        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n${serverMsg || ""}`);
-        else if (status === 401) alert("인증이 만료되었습니다. 다시 로그인 해주세요.");
-        else if (status === 403) alert("수정 권한이 없습니다.");
-        else if (status === 404) alert("이용자 정보를 찾을 수 없습니다.");
-        else if (status === 409) alert("이미 등록된 인형 또는 중복 데이터가 존재합니다.");
-        else if (status === 500) alert("서버 내부 오류가 발생했습니다.");
-        else alert(serverMsg || "알 수 없는 오류가 발생했습니다.");
+        alert(serverMsg || "오류가 발생했습니다.");
       } else {
         alert("알 수 없는 오류가 발생했습니다.");
       }
@@ -261,6 +247,7 @@ export default function UserRegisterPage() {
     }
   };
 
+  // --- UI 클래스 ---
   const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
   const tableBorderClass = "border-gray-400";
   const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
@@ -274,7 +261,7 @@ export default function UserRegisterPage() {
       <h1 className="text-2xl font-bold mb-4 text-center">이용자 등록</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* 기본정보 섹션 */}
+        {/* 기본정보 */}
         <section>
           <h2 className={sectionTitleClass}>■ 기본정보</h2>
           <table className={tableClass}>
@@ -285,7 +272,9 @@ export default function UserRegisterPage() {
                     <div className="relative w-28 h-36 border border-dashed rounded-md flex items-center justify-center bg-gray-50 overflow-hidden">
                       {photoPreview ? (
                         <Image src={photoPreview} alt="사진 미리보기" fill style={{ objectFit: "cover" }} />
-                      ) : <span className="text-gray-400 text-sm">사진</span>}
+                      ) : (
+                        <span className="text-gray-400 text-sm">사진</span>
+                      )}
                     </div>
                     <input type="file" accept="image/*" onChange={handlePhotoChange} ref={photoInputRef} className="hidden" />
                     <button type="button" onClick={() => photoInputRef.current?.click()} className="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">사진 첨부</button>
@@ -319,19 +308,25 @@ export default function UserRegisterPage() {
                   </select>
                 </td>
                 <th className={thClass}>연락처{requiredLabel}</th>
-                <td className={tdClass}>
-                  <input name="phone" value={form.phone} onChange={handlePhoneChange} className={`${inputClass} w-full bg-white`} placeholder="010-1234-5678" required />
-                </td>
+                <td className={tdClass}><input name="phone" value={form.phone} onChange={handlePhoneChange} className={`${inputClass} w-full`} placeholder="010-1234-5678" required /></td>
               </tr>
 
+              <tr>
+                <th className={thClass}>현재 상태</th>
+                <td className={tdClass}><input value={form.status} readOnly className={`${inputClass} w-full bg-gray-100 text-center`} /></td>
+                <th className={thClass}>인형 ID{requiredLabel}</th>
+                <td className={tdClass}><input name="doll_id" value={form.doll_id} onChange={handleChange} className={`${inputClass} w-full`} required /></td>
+              </tr>
+
+              {/* 주소 */}
               <tr>
                 <th className={thClass}>주소{requiredLabel}</th>
                 <td className={tdClass} colSpan={3}>
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <input name="zip_code" value={form.zip_code} readOnly placeholder="우편번호" className={`${inputClass} w-30 bg-gray-100`} />
-                      <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-400 cursor-pointer">
-                        {isScriptLoaded ? "우편번호 검색" : "로딩 중"}
+                      <button type="button" onClick={handleZipSearch} disabled={!isScriptLoaded} className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-400">
+                        우편번호 검색
                       </button>
                       <input name="address" value={form.address} readOnly placeholder="주소" className={`${inputClass} bg-gray-100 flex-grow`} />
                     </div>
@@ -340,6 +335,7 @@ export default function UserRegisterPage() {
                 </td>
               </tr>
 
+              {/* 거주형태 */}
               <tr>
                 <th className={thClass}>거주 형태{requiredLabel}</th>
                 <td className={tdClass} colSpan={3}>
@@ -353,10 +349,11 @@ export default function UserRegisterPage() {
                   </div>
                 </td>
               </tr>
+
             </tbody>
           </table>
         </section>
-
+        
         {/* 건강 상태 */}
         <section>
           <h2 className={sectionTitleClass}>■ 건강상태</h2>
