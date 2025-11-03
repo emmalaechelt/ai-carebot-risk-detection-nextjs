@@ -110,6 +110,7 @@ export interface DashboardSenior {
   treatment_plan: string;
   is_resolved: boolean;
   resolved_label: SeniorState | null;
+  pre_resolved_label: SeniorState | null; 
   latest_overall_result_id: number;
   last_state_changed_at: string; // ISO 8601
 }

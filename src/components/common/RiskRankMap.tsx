@@ -174,7 +174,7 @@ export default function RiskRankMap({
           >
             <div
               onClick={() =>
-                router.push(`/app/main/analysis/${selectedSenior.senior_id}`)
+                router.push(`/main/analysis/${selectedSenior.latest_overall_result_id}`)
               }
               className="bg-white rounded-lg shadow-lg border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"
               style={{
@@ -191,17 +191,17 @@ export default function RiskRankMap({
               </div>
               <div className="space-y-1 text-xs text-gray-800">
                 <div>
-                  <span className="font-semibold">요약: </span>
+                  <span className="font-semibold">· 요약 : </span>
                   <span>{selectedSenior.summary ?? '정보없음'}</span>
                 </div>
                 <div>
-                  <span className="font-semibold">대처방안: </span>
+                  <span className="font-semibold">· 대처방안 : </span>
                   <span style={{ whiteSpace: 'pre-line' }}>
                     {selectedSenior.treatment_plan ?? '정보없음'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-xs">
-                  <span className="font-semibold">조치 여부: </span>
+                  <span className="font-semibold">· 조치 여부 : </span>
                   {selectedSenior.is_resolved ? (
                     <span className="px-2 py-0.5 font-semibold text-white bg-green-500 rounded-full">
                       조치 완료
@@ -211,6 +211,46 @@ export default function RiskRankMap({
                       확인 필요
                     </span>
                   )}
+
+                  {/* 상태 표시와 화살표 */}
+                  {(() => {
+                    const riskColors: Record<
+                      RiskLevel,
+                      { text: string; bg: string; border: string; label: string }
+                    > = {
+                      EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급' },
+                      CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험' },
+                      DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' },
+                      POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전' },
+                    };
+
+                    const currentLabel = selectedSenior.resolved_label ?? 'POSITIVE';
+                    const previousLabel = selectedSenior.pre_resolved_label ?? currentLabel;
+
+                    const currentColor = riskColors[currentLabel];
+                    const previousColor = riskColors[previousLabel];
+
+                    return (
+                      <>
+                        {/* 이전 상태 */}
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${previousColor.text} ${previousColor.border}`}
+                        >
+                          {previousColor.label}
+                        </span>
+
+                        {/* 화살표 */}
+                        <span className="text-xs text-gray-500">→</span>
+
+                        {/* 현재 상태 */}
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${currentColor.text} ${currentColor.border}`}
+                        >
+                          {currentColor.label}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

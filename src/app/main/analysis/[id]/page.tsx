@@ -1,7 +1,6 @@
 "use client";
 
-// ✅ 1. 'useSearchParams'를 next/navigation에서 import 합니다.
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import * as XLSX from "xlsx";
@@ -59,9 +58,6 @@ type ActionState = "CRITICAL" | "DANGER" | "POSITIVE";
 export default function DetailedAnalysisPage() {
   const router = useRouter();
   const { id } = useParams();
-  
-  // ✅ 2. useSearchParams 훅을 사용하여 URL의 쿼리 파라미터를 읽을 준비를 합니다.
-  const searchParams = useSearchParams();
 
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,9 +90,6 @@ export default function DetailedAnalysisPage() {
       return;
     }
 
-    // data.senior_id 대신 URL에서 'senior_id' 파라미터를 직접 가져옵니다.
-    const seniorId = searchParams.get('senior_id');
-
     // ✅ [핵심 디버깅 코드] API 요청에 사용될 데이터를 객체로 만듭니다.
     const requestBody = {
       overall_result_id: parseInt(id as string, 10),
@@ -106,13 +99,12 @@ export default function DetailedAnalysisPage() {
 
     // ✅ API를 호출하기 직전에, URL과 보낼 데이터를 콘솔에 출력합니다.
     console.log(`[API 요청 데이터 확인]`);
-    console.log(`요청 URL: POST /seniors/${seniorId}/state`);
+    console.log(`요청 URL: POST /seniors/${data?.senior_id}/state`);
     console.log(`요청 본문 (Body):`, requestBody);
 
     setIsSubmitting(true);
     try {
-      // API 호출 시 data 객체 대신 URL에서 가져온 seniorId를 사용합니다.
-      await api.post(`/seniors/${seniorId}/state`, {
+      await api.post(`/seniors/${data?.senior_id}/state`, {
         overall_result_id: parseInt(id as string, 10),
         new_state: selectedState,
         reason: `관리자가 분석 결과(ID: ${id})를 확인 후 상태를 수동으로 변경했습니다.`
