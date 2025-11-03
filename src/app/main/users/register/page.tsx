@@ -8,6 +8,38 @@ import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
 import { geocodeAddress } from "@/utils/geocode";
 
+interface FormState {
+  doll_id: string;
+  name: string;
+  birth_date: string;
+  sex: SeniorSex | "";
+  phone: string;
+  zip_code: string;
+  address: string;
+  address_detail: string;
+  gu: string;
+  dong: string;
+  residence: Residence | "";
+  status: string;
+  diseases: string;
+  medications: string;
+  disease_note: string;
+  guardian_name: string;
+  relationship: string;
+  guardian_phone: string;
+  guardian_note: string;
+  note: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface DaumPostcodeData {
+  zonecode: string;
+  roadAddress: string;
+  sigungu: string;
+  bname: string;
+}
+
 const isValidDate = (y: number, m: number, d: number): boolean => {
   const date = new Date(y, m - 1, d);
   const today = new Date();
@@ -32,31 +64,6 @@ const residenceOptions: { key: string; value: string }[] = [
   { key: "APARTMENT", value: "아파트" },
 ];
 
-interface FormState {
-  doll_id: string;
-  name: string;
-  birth_date: string;
-  sex: SeniorSex | "";
-  phone: string;
-  zip_code: string;
-  address: string;
-  address_detail: string;
-  gu: string;
-  dong: string;
-  residence: Residence | "";
-  status: string;
-  diseases: string;
-  medications: string;
-  disease_note: string;
-  guardian_name: string;
-  relationship: string;
-  guardian_phone: string;
-  guardian_note: string;
-  note: string;
-  lat: number;
-  lng: number;
-}
-
 export default function UserRegisterPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +81,7 @@ export default function UserRegisterPage() {
     gu: "",
     dong: "",
     residence: "",
-    status: "정상", // 기본값
+    status: "정상",
     diseases: "",
     medications: "",
     disease_note: "",
@@ -83,8 +90,8 @@ export default function UserRegisterPage() {
     guardian_phone: "",
     guardian_note: "",
     note: "",
-    lat: 0,
-    lng: 0,
+    latitude: 0,
+    longitude: 0,
   });
 
   const [birth, setBirth] = useState({ year: "", month: "", day: "" });
@@ -95,7 +102,7 @@ export default function UserRegisterPage() {
   const addressDetailRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // --- 다음 우편번호 스크립트 로드 ---
+  // --- Daum 주소 검색 스크립트 로드 ---
   useEffect(() => {
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
     if (document.querySelector(`script[src="${scriptUrl}"]`)) {
@@ -112,7 +119,7 @@ export default function UserRegisterPage() {
   // --- 생년월일 → 나이 계산 ---
   useEffect(() => {
     const { year, month, day } = birth;
-    if (year.length === 4 && month.length > 0 && day.length > 0) {
+    if (year.length === 4 && month && day) {
       const y = parseInt(year, 10);
       const m = parseInt(month, 10);
       const d = parseInt(day, 10);
@@ -130,7 +137,6 @@ export default function UserRegisterPage() {
     }
   }, [birth]);
 
-  // --- 폼 change handler ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -149,19 +155,23 @@ export default function UserRegisterPage() {
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const formatted = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, "$1-$2-$3").slice(0, 13);
+    const formatted = value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d{3,4})?(\d{4})?/, (_, p1, p2, p3) => {
+        if (!p2) return p1;
+        if (!p3) return `${p1}-${p2}`;
+        return `${p1}-${p2}-${p3}`;
+      });
     setForm((prev) => ({ ...prev, [name]: formatted }));
   };
 
-  // --- 주소 검색 ---
   const handleZipSearch = () => {
     if (!isScriptLoaded || !window.daum?.Postcode) {
       alert("주소 검색 스크립트가 아직 로드되지 않았습니다.");
       return;
     }
-    const Postcode = window.daum.Postcode;
-    new Postcode({
-      oncomplete: async (data: { zonecode: string; roadAddress: string; sigungu: string; bname: string }) => {
+    new window.daum.Postcode({
+      oncomplete: async (data: DaumPostcodeData) => {
         setForm((prev) => ({
           ...prev,
           zip_code: data.zonecode || "",
@@ -171,23 +181,21 @@ export default function UserRegisterPage() {
         }));
         addressDetailRef.current?.focus();
 
-        const coords = await geocodeAddress(data.roadAddress || "");
-        if (coords) setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+        const coords = await geocodeAddress(data.roadAddress);
+        if (coords) setForm((prev) => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
       },
     }).open();
   };
 
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
-  // --- 제출 handler ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -206,26 +214,14 @@ export default function UserRegisterPage() {
       form.guardian_phone,
       form.relationship,
     ];
-    if (required.some((v) => !v)) {
-      alert("필수 항목(*)을 모두 입력해주세요.");
-      return;
-    }
+    if (required.some((v) => !v)) return alert("필수 항목(*)을 모두 입력해주세요.");
 
     setIsSubmitting(true);
 
     try {
       const dollRes = await api.get(`/dolls/${form.doll_id.trim()}`);
-      if (!dollRes.data) {
-        alert("해당 인형이 존재하지 않습니다.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (dollRes.data.senior_assigned) {
-        alert(`해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.`);
-        setIsSubmitting(false);
-        return;
-      }
+      if (!dollRes.data) return alert("해당 인형이 존재하지 않습니다.");
+      if (dollRes.data.senior_assigned) return alert(`해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.`);
 
       const seniorPayload = { ...form };
       const formData = new FormData();
@@ -234,7 +230,7 @@ export default function UserRegisterPage() {
 
       await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
       alert("이용자 등록 완료!");
-      router.push("/main/users/view");
+      router.push("/main/dashboard"); // 등록 후 DashboardPage로 이동
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const serverMsg = err.response?.data?.message;
@@ -353,7 +349,7 @@ export default function UserRegisterPage() {
             </tbody>
           </table>
         </section>
-        
+
         {/* 건강 상태 */}
         <section>
           <h2 className={sectionTitleClass}>■ 건강상태</h2>

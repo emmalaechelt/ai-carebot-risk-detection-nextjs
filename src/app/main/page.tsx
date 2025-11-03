@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -37,7 +37,6 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 
-  // --- SSE 연결 ---
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const url = token
@@ -50,17 +49,14 @@ export default function DashboardPage() {
     es.onerror = (err) => console.error('SSE 오류', err);
     es.addEventListener('notification', (event: MessageEvent) => {
       try {
-        const payload = JSON.parse(event.data) as { type: string };
-        if (payload.type === 'ANALYSIS_COMPLETE' || payload.type === 'SENIOR_STATE_CHANGED') {
-          fetchDashboardData();
-        }
+        const payload: { type: string } = JSON.parse(event.data);
+        if (payload.type === 'ANALYSIS_COMPLETE' || payload.type === 'SENIOR_STATE_CHANGED') fetchDashboardData();
       } catch (err) { console.error('SSE 파싱 오류', err); }
     });
 
     return () => { if (es) es.close(); eventSourceRef.current = null; };
   }, [fetchDashboardData]);
 
-  // --- 상태별 필터 + 최신순 정렬 ---
   const filteredSeniors = useMemo(() => {
     if (!data?.seniors_by_state) return [];
     const key = selectedLevel.toLowerCase() as keyof typeof data.seniors_by_state;
@@ -96,11 +92,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-4">
-      <StatusSummary
-        counts={data.state_count}
-        selectedLevel={selectedLevel}
-        onSelectLevel={handleLevelSelect}
-      />
+      <StatusSummary counts={data.state_count} selectedLevel={selectedLevel} onSelectLevel={handleLevelSelect} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
         <div className="md:col-span-2">
           <RiskRankMap
