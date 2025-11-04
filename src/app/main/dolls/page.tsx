@@ -149,7 +149,7 @@ export default function DollsPage() {
   });
 
   return (
-    <div className="p-4 space-y-4 text-black">
+    <div className="space-y-4 text-black">
       <h2 className="text-2xl font-bold text-center">인형 관리</h2>
       {/* 테이블 */}
       <div className="bg-white rounded-lg shadow-sm p-3">
