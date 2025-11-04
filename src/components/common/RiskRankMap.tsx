@@ -129,9 +129,12 @@ export default function RiskRankMap({
                 ) + 1;
             }
 
+            // ✅ 여기 수정됨: key가 항상 고유하도록 변경
+            const markerKey = `${senior.latest_overall_result_id ?? senior.senior_id ?? 'unknown'}-${idx}`;
+
             return (
               <MapMarker
-                key={senior.latest_overall_result_id}
+                key={markerKey}
                 position={{
                   lat: Number(senior.latitude),
                   lng: Number(senior.longitude),

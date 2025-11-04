@@ -198,51 +198,59 @@ export default function UserRegisterPage() {
   };
 
   const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const required = [
-    form.doll_id,
-    form.name,
-    form.birth_date,
-    form.sex,
-    form.phone,
-    form.address,
-    form.gu,
-    form.dong,
-    form.residence,
-    form.guardian_name,
-    form.guardian_phone,
-    form.relationship,
-  ];
-  if (required.some((v) => !v)) return alert("필수 항목(*)을 모두 입력해주세요.");
+    const required = [
+      form.doll_id,
+      form.name,
+      form.birth_date,
+      form.sex,
+      form.phone,
+      form.address,
+      form.gu,
+      form.dong,
+      form.residence,
+      form.guardian_name,
+      form.guardian_phone,
+      form.relationship,
+    ];
+    if (required.some((v) => !v)) return alert("필수 항목(*)을 모두 입력해주세요.");
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  try {
-    const dollRes = await api.get(`/dolls/${form.doll_id.trim()}`);
-    if (!dollRes.data) return alert("해당 인형이 존재하지 않습니다.");
-    if (dollRes.data.senior_assigned)
-      return alert(`해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.`);
+    try {
+      const dollRes = await api.get(`/dolls/${form.doll_id.trim()}`);
+      if (!dollRes.data) return alert("해당 인형이 존재하지 않습니다.");
+      if (dollRes.data.senior_assigned)
+        return alert(`해당 인형(ID: ${form.doll_id})은 이미 "${dollRes.data.senior_name}" 이용자에게 배정되어 있습니다.`);
 
-    const seniorPayload = { ...form };
-    const formData = new FormData();
-    formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
-    if (photoFile) formData.append("photo", photoFile);
+      const seniorPayload = { ...form };
+      const formData = new FormData();
+      formData.append("senior", new Blob([JSON.stringify(seniorPayload)], { type: "application/json" }));
+      if (photoFile) formData.append("photo", photoFile);
 
-    await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
-    alert("이용자 등록 완료!");
-    router.push("/main/users/view");
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const serverMsg = err.response?.data?.message;
-      alert(serverMsg || "오류가 발생했습니다.");
-    } else {
-      alert("알 수 없는 오류가 발생했습니다.");
+      const response = await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const newSenior = response.data;
+
+      if (!newSenior?.id) {
+        alert("등록은 완료되었지만 이용자 ID를 가져오지 못했습니다. 대시보드로 이동합니다.");
+        router.push("/main");
+        return;
+      }
+
+      alert("이용자 등록이 완료되었습니다!");
+      router.push(`/main/view/${newSenior.senior_id}`);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const serverMsg = err.response?.data?.message;
+        alert(serverMsg || "오류가 발생했습니다.");
+      } else {
+        alert("알 수 없는 오류가 발생했습니다.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // --- UI 클래스 ---
   const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
