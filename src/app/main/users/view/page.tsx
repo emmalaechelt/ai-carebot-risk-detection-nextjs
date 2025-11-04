@@ -124,7 +124,17 @@ export default function UsersViewPage() {
     { accessorKey: "state", header: "현재 상태", cell: info => statusMap[info.getValue() as string] || (info.getValue() as string) },
     { accessorKey: "doll_id", header: "인형 ID" },
     { accessorKey: "phone", header: "전화번호" },
-    { accessorKey: "created_at", header: "등록일", cell: info => new Date(info.getValue() as string).toLocaleDateString() },
+    { 
+      accessorKey: "created_at", 
+      header: "등록일", 
+      cell: info => {
+        const date = new Date(info.getValue() as string);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}. ${month}. ${day}.`;
+      } 
+    },
   ], [router, pageIndex, pageSize, searchParams.gu]);
 
   const table = useReactTable({
@@ -248,7 +258,7 @@ export default function UsersViewPage() {
         </div>
 
         {/* 페이지네이션 */}
-        <div className="flex justify-center items-center mt-2 space-x-2 text-sm cursor-pointer">
+        <div className="flex justify-center items-center mt-4 space-x-2 text-sm cursor-pointer">
           <button onClick={()=>table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer">{'<<'}</button>
           <button onClick={()=>table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer">{'<'}</button>
           {Array.from({length: Math.min(5,pageCount-Math.floor(pageIndex/5)*5)},(_,i)=>{

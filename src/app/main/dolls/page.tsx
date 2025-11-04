@@ -225,7 +225,7 @@ export default function DollsPage() {
         </div>
 
         {/* 페이지네이션 */}
-        <div className="flex justify-center items-center mt-2 space-x-1 text-sm">
+        <div className="flex justify-center items-center mt-4 space-x-2 text-sm">
           <button
             onClick={() => setPagination({ pageIndex: 0, pageSize })}
             disabled={pageIndex === 0}

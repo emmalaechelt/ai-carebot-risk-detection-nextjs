@@ -154,7 +154,26 @@ export default function AnalysisPage() {
         </button>
       )
     },
-    { accessorKey: "timestamp", header: "분석 일시", cell: (info) => new Date(info.getValue() as string).toLocaleString("ko-KR") },
+    { 
+      accessorKey: "timestamp", 
+      header: "분석 일시", 
+      cell: (info) => {
+        const date = new Date(info.getValue() as string);
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // 월
+        const day = String(date.getDate()).padStart(2, '0');      // 일
+
+        const hoursRaw = date.getHours();
+        const ampm = hoursRaw >= 12 ? '오후' : '오전';
+        const hours = String(hoursRaw % 12 || 12).padStart(2, '0'); // 시 (12시간제)
+        
+        const minutes = String(date.getMinutes()).padStart(2, '0'); // 분
+        const seconds = String(date.getSeconds()).padStart(2, '0'); // 초
+
+        return `${year}. ${month}. ${day}. ${ampm} ${hours}:${minutes}:${seconds}`;
+      }
+    },
   ], [router]);
 
   const table = useReactTable({
@@ -346,7 +365,7 @@ export default function AnalysisPage() {
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
-                    <th key={header.id} className="px-2 py-2">
+                    <th key={header.id} className={`px-2 py-2 ${header.id === 'timestamp' ? 'w-50' : ''}`}>
                       {flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
@@ -362,9 +381,15 @@ export default function AnalysisPage() {
                 table.getRowModel().rows.map(row => (
                   <tr key={row.id} className="bg-white border-b hover:bg-gray-50">
                     {row.getVisibleCells().map(cell => (
+                      // --- ⬇️ 2번 수정: className 부분을 수정하세요 ---
                       <td
                         key={cell.id}
-                        className={`px-2 py-2 align-middle ${cell.column.id === 'summary' ? 'text-left' : ''} ${cell.column.id === 'timestamp' ? 'text-right pr-4' : 'text-center'}`}
+                        // 'summary'와 'timestamp' 컬럼은 왼쪽 정렬, 나머지는 중앙 정렬로 변경
+                        className={`px-2 py-2 align-middle ${
+                          cell.column.id === 'summary' || cell.column.id === 'timestamp'
+                            ? 'text-left'
+                            : 'text-center'
+                        }`}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -376,12 +401,50 @@ export default function AnalysisPage() {
           </table>
         </div>
 
-        <div className="flex items-center justify-center gap-2 mt-4 text-sm">
-          <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}>{'<<'}</button>
-          <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanPreviousPage() ? "text-black" : "text-gray-400"}`}>{'<'}</button>
-          <div className="flex gap-2 min-w-[200px] justify-between">{renderPageNumbers()}</div>
-          <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}>{'>'}</button>
-          <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()} className={`px-2.5 py-1 disabled:opacity-50 hover:bg-gray-100 cursor-pointer ${table.getCanNextPage() ? "text-black" : "text-gray-400"}`}>{'>>'}</button>
+        <div className="flex justify-center items-center mt-4 space-x-2 text-sm">
+          <button
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+            className="px-2 py-1 rounded-md disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+          >
+            {"<<"}
+          </button>
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="px-2 py-1 rounded-md disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+          >
+            {"<"}
+          </button>
+
+          {Array.from({ length: Math.min(5, pageCount - Math.floor(pageIndex / 5) * 5) }, (_, i) => {
+            const pn = Math.floor(pageIndex / 5) * 5 + i;
+            if (pn < pageCount)
+              return (
+                <button
+                  key={pn}
+                  onClick={() => table.setPageIndex(pn)}
+                  className={`px-3 py-1 rounded-md cursor-pointer ${pn === pageIndex ? "bg-blue-500 text-white font-bold" : "text-black hover:bg-gray-100"}`}
+                >
+                  {pn + 1}
+                </button>
+              );
+          })}
+
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="px-2 py-1 rounded-md disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+          >
+            {">"}
+          </button>
+          <button
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+            className="px-2 py-1 rounded-md disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+          >
+            {">>"}
+          </button>
         </div>
       </div>
     </div>
