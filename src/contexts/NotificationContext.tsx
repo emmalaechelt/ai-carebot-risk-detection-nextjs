@@ -1,153 +1,140 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import type { Notification } from '@/types/notification';
-import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-interface NotificationContextType {
+interface NotificationContextProps {
   notifications: Notification[];
   unreadCount: number;
-  markAsRead: (id: number) => void;
-  markAllAsRead: () => void;
+  toastNotifications: Notification[];
+  markAsRead: (notificationId: number) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   clearNotifications: () => void;
-  isBellOpen: boolean;
-  setIsBellOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  clearToast: (notificationId: number) => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextProps | undefined>(undefined);
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+export const useNotificationContext = () => {
+  const context = useContext(NotificationContext);
+  if (!context) throw new Error('useNotificationContext must be used within NotificationProvider');
+  return context;
+};
+
+interface Props {
+  children: ReactNode;
+}
+
+export const NotificationProvider: React.FC<Props> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isBellOpen, setIsBellOpen] = useState(false);
-  const sseControllerRef = useRef<AbortController | null>(null);
 
-  // SSE 연결 함수
-  const connectSSE = () => {
-    if (!API_BASE_URL) return console.error("환경 변수 NEXT_PUBLIC_API_BASE_URL 없음");
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-    const accessTokenRaw = localStorage.getItem('accessToken');
-    if (!accessTokenRaw) return console.error("AccessToken 없음");
-    const accessToken = accessTokenRaw.replace(/"/g, '');
-    if (!accessToken) return console.error("잘못된 AccessToken");
+  useEffect(() => {
+    if (!API_BASE_URL) return;
 
     const controller = new AbortController();
-    sseControllerRef.current = controller;
+    const SSE_URL = `${API_BASE_URL}/notifications/subscribe`;
 
-    fetchEventSource(`${API_BASE_URL}/notifications/subscribe`, {
+    fetchEventSource(SSE_URL, {
       signal: controller.signal,
-      headers: { Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')?.replace(/"/g, '') || ''}`,
+      },
       onopen: async (res) => {
-        if (res.status === 401) {
-          console.error("❌ SSE 인증 실패: 토큰이 만료되었거나 유효하지 않음");
-          controller.abort();
-          return;
-        }
-
         if (res.ok) {
           try {
             const response = await api.get<Notification[]>('/notifications');
             setNotifications(response.data);
             setUnreadCount(response.data.filter(n => !n.is_read).length);
-          } catch (err) {
-            console.error("❌ 초기 알림 불러오기 실패:", err);
+          } catch (e) {
+            console.error('Failed to fetch notifications:', e);
           }
         }
       },
-
       onmessage: (event) => {
-        if (event.event === 'notification') {
-          const newNotification: Notification = JSON.parse(event.data);
-          setNotifications(prev => [newNotification, ...prev]);
-          if (!newNotification.is_read) setUnreadCount(prev => prev + 1);
+        const data = event.data;
+        if (!data) return;
+
+        try {
+          // JSON 형식으로 파싱 시도
+          const parsed = JSON.parse(data);
+
+          if (
+            typeof parsed === 'object' &&
+            parsed !== null &&
+            'notification_id' in parsed &&
+            'type' in parsed
+          ) {
+            const newNotification = parsed as Notification;
+
+            setNotifications(prev => [newNotification, ...prev]);
+            if (!newNotification.is_read) setUnreadCount(prev => prev + 1);
+            if (newNotification.type === 'ANALYSIS_COMPLETE') {
+              setToastNotifications(prev => [...prev, newNotification]);
+            }
+          } else {
+            console.warn('Received SSE message in unexpected format:', parsed);
+          }
+        } catch {
+          // JSON 아닌 일반 메시지는 그냥 로그
+          console.log('SSE message (non-JSON):', data);
         }
       },
-
       onerror: (err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          console.log("🟡 SSE 연결 종료 (Abort)");
-        } else {
-          console.error("❗ SSE 스트림 오류 발생:", err);
-          // 401이 아니면 3초 후 재연결
-          setTimeout(() => {
-            if (!sseControllerRef.current) connectSSE();
-          }, 3000);
-        }
-      }
+        if (err instanceof Error && err.name === 'AbortError') return;
+        console.error('SSE error, reconnecting...', err);
+      },
     });
-  };
 
-  useEffect(() => {
-    if (isLoading || !isAuthenticated || sseControllerRef.current) return;
-    connectSSE();
+    return () => controller.abort();
+  }, [API_BASE_URL]);
 
-    return () => {
-      if (sseControllerRef.current) {
-        sseControllerRef.current.abort();
-        sseControllerRef.current = null;
-      }
-    };
-  }, [isLoading, isAuthenticated]);
-
-  // 개별 읽음 처리
-  const markAsRead = async (id: number) => {
-    const target = notifications.find(n => n.notification_id === id);
+  const markAsRead = async (notificationId: number) => {
+    const target = notifications.find(n => n.notification_id === notificationId);
     if (!target || target.is_read) return;
+
     try {
-      await api.post(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n.notification_id === id ? { ...n, is_read: true } : n));
+      await api.post(`/notifications/${notificationId}/read`);
+      setNotifications(prev =>
+        prev.map(n => n.notification_id === notificationId ? { ...n, is_read: true } : n)
+      );
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error("❌ 알림 읽음 처리 실패:", err);
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
     }
   };
 
-  // 전체 읽음 처리
   const markAllAsRead = async () => {
     try {
-      await api.put('/notifications/read-all');
+      await api.post('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    } catch (err) {
-      console.error("❌ 전체 읽음 처리 실패:", err);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
     }
   };
 
-  // 전체 삭제
-  const clearNotifications = async () => {
-    try {
-      await api.delete('/notifications');
-      setNotifications([]);
-      setUnreadCount(0);
-    } catch (err) {
-      console.error("❌ 알림 전체 삭제 실패:", err);
-    }
+  const clearNotifications = () => setNotifications([]);
+  const clearToast = (notificationId: number) => {
+    setToastNotifications(prev => prev.filter(n => n.notification_id !== notificationId));
   };
 
   return (
     <NotificationContext.Provider value={{
       notifications,
       unreadCount,
+      toastNotifications,
       markAsRead,
       markAllAsRead,
       clearNotifications,
-      isBellOpen,
-      setIsBellOpen,
+      clearToast
     }}>
       {children}
     </NotificationContext.Provider>
   );
-}
-
-export const useNotificationContext = () => {
-  const context = useContext(NotificationContext);
-  if (!context) throw new Error('useNotificationContext must be used within a NotificationProvider');
-  return context;
 };

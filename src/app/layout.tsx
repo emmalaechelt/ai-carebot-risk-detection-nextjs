@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
@@ -6,6 +7,8 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import KakaoMapProvider from "@/contexts/KakaoMapContext";
+import NotificationBell from "@/components/common/NotificationBell";
+import EmergencyToast from "@/components/common/EmergencyToast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,8 +36,16 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <NotificationProvider>
-            {/* ✅ Kakao SDK 로드 상태를 감지해 전역 공급 */}
-            <KakaoMapProvider>{children}</KakaoMapProvider>
+            <KakaoMapProvider>
+              <div className="relative min-h-screen">
+
+                {/* 페이지 내용 */}
+                <main>{children}</main>
+
+                {/* 긴급 토스트 */}
+                <EmergencyToast />
+              </div>
+            </KakaoMapProvider>
           </NotificationProvider>
         </AuthProvider>
       </body>
