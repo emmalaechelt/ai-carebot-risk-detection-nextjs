@@ -31,7 +31,7 @@ export default function Sidebar() {
   ];
 
   const renderMenu = (items: MenuItem[], isSubMenu = false): ReactNode => (
-    <ul className={`${isSubMenu ? "ml-4 mt-1 text-sm space-y-1" : "space-y-2 text-gray-700"}`}>
+    <ul className={`${isSubMenu ? "ml-4 mt-1 text-base space-y-1" : "space-y-2 text-gray-700"}`}>
       {items.map(item => {
         const isActive = item.href && (pathname === item.href || (item.href !== "/main" && pathname.startsWith(item.href)));
         return (
@@ -40,7 +40,7 @@ export default function Sidebar() {
               <div>
                 <button
                   onClick={() => toggleSubMenu(item.label)}
-                  className="flex items-center justify-between w-full px-2 py-2 font-medium text-gray-700 hover:text-orange-500 rounded-lg"
+                  className="flex items-center justify-between w-full px-2 py-2 font-semibold text-gray-700 hover:text-orange-500 rounded-lg"
                 >
                   <span className="flex items-center space-x-2">
                     {item.icon && <span>{item.icon}</span>}
@@ -55,7 +55,7 @@ export default function Sidebar() {
             ) : (
               <Link
                 href={item.href || "#"}
-                className={`flex items-center space-x-2 px-2 py-2 rounded-lg transition
+                className={`flex items-center space-x-2 px-2 py-2 rounded-lg transition font-medium
                 ${isActive ? "bg-orange-100 text-orange-600 font-semibold" : "hover:bg-orange-50 hover:text-orange-500"}`}
               >
                  {item.icon && (
@@ -81,7 +81,8 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="w-64 bg-white border-r flex flex-col shadow-sm justify-between">
+    // 수정된 부분: 너비를 w-60으로 조정하여 글자 잘림 방지, 오른쪽 테두리(border-r)는 제거된 상태 유지
+    <aside className="w-60 bg-white flex flex-col shadow-sm justify-between">
       {/* 상단 로고 + 메뉴 */}
       <div>
         <div className="flex items-center border-b h-16 px-4">

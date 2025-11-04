@@ -53,6 +53,8 @@ export default function RiskRankMap({
   // 카드 클릭 시 중앙 이동
   useEffect(() => {
     if (
+      selectedSenior?.latitude !== null &&
+      selectedSenior?.longitude !== null &&
       selectedSenior?.latitude !== undefined &&
       selectedSenior?.longitude !== undefined
     ) {
@@ -68,6 +70,8 @@ export default function RiskRankMap({
 
   const shouldShowInfoWindow =
     !isDashboardView &&
+    selectedSenior?.latitude !== null &&
+    selectedSenior?.longitude !== null &&
     selectedSenior?.latitude !== undefined &&
     selectedSenior?.longitude !== undefined;
 
@@ -104,64 +108,66 @@ export default function RiskRankMap({
         isPanto
         onZoomChanged={(map) => setZoomLevel(map.getLevel())}
       >
-        {seniors.map((senior, idx) => {
-          if (
-            senior.latitude === undefined ||
-            senior.longitude === undefined
+        {seniors
+          .filter(
+            (s) =>
+              s.latitude !== null &&
+              s.longitude !== null &&
+              s.latitude !== undefined &&
+              s.longitude !== undefined
           )
-            return null;
+          .map((senior, idx) => {
+            const isSelected = selectedSenior?.senior_id === senior.senior_id;
+            const circleSize = getMarkerSize();
+            const fontSize = getFontSize();
 
-          const isSelected = selectedSenior?.senior_id === senior.senior_id;
-          const circleSize = getMarkerSize();
-          const fontSize = getFontSize();
+            let indexNumber = 0;
+            if (isDashboardView && senior.resolved_label === 'EMERGENCY') {
+              indexNumber =
+                emergencySeniors.findIndex(
+                  (s) => s.senior_id === senior.senior_id
+                ) + 1;
+            }
 
-          let indexNumber = 0;
-          if (isDashboardView && senior.resolved_label === 'EMERGENCY') {
-            indexNumber =
-              emergencySeniors.findIndex(
-                (s) => s.senior_id === senior.senior_id
-              ) + 1;
-          }
-
-          return (
-            <MapMarker
-              key={senior.latest_overall_result_id}
-              position={{
-                lat: Number(senior.latitude),
-                lng: Number(senior.longitude),
-              }}
-              zIndex={isSelected ? 100 : idx}
-              onClick={() => {
-                if (!isDashboardView) onMarkerClick(senior);
-              }}
-            >
-              {indexNumber > 0 && (
-                <div
-                  style={{
-                    width: `${circleSize}px`,
-                    height: `${circleSize}px`,
-                    borderRadius: '50%',
-                    backgroundColor: stateColors.EMERGENCY,
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: `${fontSize}px`,
-                    position: 'absolute',
-                    top: `-${getAdjustedTop(senior, idx)}px`,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    userSelect: 'none',
-                    border: '1px solid #fff',
-                  }}
-                >
-                  {indexNumber}
-                </div>
-              )}
-            </MapMarker>
-          );
-        })}
+            return (
+              <MapMarker
+                key={senior.latest_overall_result_id}
+                position={{
+                  lat: Number(senior.latitude),
+                  lng: Number(senior.longitude),
+                }}
+                zIndex={isSelected ? 100 : idx}
+                onClick={() => {
+                  if (!isDashboardView) onMarkerClick(senior);
+                }}
+              >
+                {indexNumber > 0 && (
+                  <div
+                    style={{
+                      width: `${circleSize}px`,
+                      height: `${circleSize}px`,
+                      borderRadius: '50%',
+                      backgroundColor: stateColors.EMERGENCY,
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      fontSize: `${fontSize}px`,
+                      position: 'absolute',
+                      top: `-${getAdjustedTop(senior, idx)}px`,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      userSelect: 'none',
+                      border: '1px solid #fff',
+                    }}
+                  >
+                    {indexNumber}
+                  </div>
+                )}
+              </MapMarker>
+            );
+          })}
 
         {shouldShowInfoWindow && (
           <CustomOverlayMap
@@ -174,7 +180,9 @@ export default function RiskRankMap({
           >
             <div
               onClick={() =>
-                router.push(`/main/analysis/${selectedSenior.latest_overall_result_id}`)
+                router.push(
+                  `/main/analysis/${selectedSenior.latest_overall_result_id}`
+                )
               }
               className="bg-white rounded-lg shadow-lg border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"
               style={{
@@ -218,14 +226,36 @@ export default function RiskRankMap({
                       RiskLevel,
                       { text: string; bg: string; border: string; label: string }
                     > = {
-                      EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급' },
-                      CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험' },
-                      DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' },
-                      POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전' },
+                      EMERGENCY: {
+                        text: 'text-red-600',
+                        bg: 'bg-red-50',
+                        border: 'border-red-200',
+                        label: '긴급',
+                      },
+                      CRITICAL: {
+                        text: 'text-orange-600',
+                        bg: 'bg-orange-50',
+                        border: 'border-orange-200',
+                        label: '위험',
+                      },
+                      DANGER: {
+                        text: 'text-yellow-500',
+                        bg: 'bg-yellow-50',
+                        border: 'border-yellow-200',
+                        label: '주의',
+                      },
+                      POSITIVE: {
+                        text: 'text-green-600',
+                        bg: 'bg-green-50',
+                        border: 'border-green-200',
+                        label: '안전',
+                      },
                     };
 
-                    const currentLabel = selectedSenior.resolved_label ?? 'POSITIVE';
-                    const previousLabel = selectedSenior.pre_resolved_label ?? currentLabel;
+                    const currentLabel =
+                      selectedSenior.resolved_label ?? 'POSITIVE';
+                    const previousLabel =
+                      selectedSenior.pre_resolved_label ?? currentLabel;
 
                     const currentColor = riskColors[currentLabel];
                     const previousColor = riskColors[previousLabel];
