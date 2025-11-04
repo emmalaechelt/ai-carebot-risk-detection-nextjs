@@ -58,13 +58,12 @@ export default function RiskRankList({
     POSITIVE: 3,
   };
 
+  // --- ⬇️ 수정된 부분 ---
+  // 이유: 상위 컴포넌트에서 이미 필터링된 목록(seniors)을 전달하므로, 내부에서 중복으로 필터링할 경우
+  //      '긴급' 상태의 데이터가 누락되는 문제가 발생합니다. 불필요한 필터 로직을 제거하여
+  //      전달받은 seniors 목록을 그대로 사용하고 정렬만 수행하도록 수정합니다.
   const filteredSeniors = seniors
-    .filter(senior => {
-      if (!riskLevelLabel) return true;
-      const seniorLabel = senior.resolved_label ?? 'POSITIVE';
-      return labelToKorean[seniorLabel] === displayLevelLabel;
-    })
-    .slice()
+    .slice() // 원본 배열 수정을 방지하기 위해 복사본 생성
     .sort((a, b) => {
       const levelA = a.resolved_label ?? 'POSITIVE';
       const levelB = b.resolved_label ?? 'POSITIVE';
@@ -76,6 +75,7 @@ export default function RiskRankList({
         new Date(a.last_state_changed_at).getTime()
       );
     });
+  // --- ⬆️ 여기까지 수정 ---
 
   return (
     <div className="w-full h-full max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
@@ -93,7 +93,7 @@ export default function RiskRankList({
       ) : (
         filteredSeniors.map((senior, idx) => {
           const isSelected = selectedSeniorId === senior.senior_id;
-          const risk = senior.resolved_label ?? 'POSITIVE';
+          const risk = senior.resolved_label ?? displayLevelColor;
           const color = riskColors[risk];
           const sexInKorean = sexMap[senior.sex] ?? senior.sex;
 
