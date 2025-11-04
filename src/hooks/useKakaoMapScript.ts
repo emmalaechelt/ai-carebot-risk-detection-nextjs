@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-const KAKAO_MAP_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
+const KAKAO_MAP_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY;
 
 export default function useKakaoMapScript() {
   useEffect(() => {

@@ -182,6 +182,7 @@ export default function UserRegisterPage() {
         addressDetailRef.current?.focus();
 
         const coords = await geocodeAddress(data.roadAddress);
+        console.log(coords)
         if (coords) setForm((prev) => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
       },
     }).open();
@@ -230,7 +231,7 @@ export default function UserRegisterPage() {
 
     await api.post("/seniors", formData, { headers: { "Content-Type": "multipart/form-data" } });
     alert("이용자 등록 완료!");
-    router.push("/main/dashboard");
+    router.push("/main/users/view");
   } catch (err) {
     if (axios.isAxiosError(err)) {
       const serverMsg = err.response?.data?.message;
