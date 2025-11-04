@@ -1,3 +1,5 @@
+// src/app/main/layout.tsx
+
 'use client';
 
 import { ReactNode, useEffect } from "react";
@@ -50,14 +52,14 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
   if (isLoading || !isAuthenticated) return <AppSkeleton />;
 
-   // 인증된 사용자만 메인 레이아웃을 볼 수 있음
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* ✅ [핵심 수정] username prop을 완전히 제거합니다. */}
-        <Header /> 
-        <div className="flex-1 p-6 overflow-y-auto space-y-6">
+        <Header />
+        {/* --- 수정된 부분 --- */}
+        {/* 이유: p-6과 space-y-6이 너무 넓은 여백을 만들어 스크롤을 유발. p-4, space-y-4로 줄여서 여백을 최적화. */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-4">
           <EmergencyToast />
           {children}
         </div>

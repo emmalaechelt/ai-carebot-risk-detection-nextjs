@@ -1,3 +1,5 @@
+// src/app/main/page.tsx
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -63,7 +65,6 @@ export default function DashboardPage() {
     };
   }, [fetchDashboardData]);
 
-  // ✅ 위도/경도 0이라도 표시되도록 수정
   const filteredSeniors = useMemo(() => {
     if (!data?.seniors_by_state) return [];
     const key = selectedLevel.toLowerCase() as keyof typeof data.seniors_by_state;
@@ -87,13 +88,18 @@ export default function DashboardPage() {
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
 
   return (
-    <div className="container mx-auto space-y-6 p-4">
+    /* --- 수정된 부분: flex 컨테이너로 변경 --- */
+    // 이유: h-full과 flex-col을 사용해 부모 컴포넌트(MainLayout)의 높이에 맞춰 콘텐츠를 채우도록 설정.
+    // 기존의 불필요한 p-4 여백을 제거하고 space-y-4로 내부 간격만 조절.
+    <div className="flex flex-col h-full space-y-4">
       <StatusSummary
         counts={data.state_count}
         selectedLevel={selectedLevel}
         onSelectLevel={setSelectedLevel}
       />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
+      {/* --- 수정된 부분: 고정 높이 제거 및 flex-1 추가 --- */}
+      {/* 이유: 스크롤의 핵심 원인이었던 h-[600px]를 제거. flex-1을 추가하여 StatusSummary를 제외한 나머지 모든 수직 공간을 채우도록 함. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
         <div className="md:col-span-2">
           <RiskRankMap
             seniors={filteredSeniors}
