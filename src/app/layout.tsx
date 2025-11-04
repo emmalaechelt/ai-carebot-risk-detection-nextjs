@@ -1,11 +1,11 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script"; // ✅ Kakao SDK 로드용
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import KakaoMapContext from "@/contexts/KakaoMapContext";
+import KakaoMapProvider from "@/contexts/KakaoMapContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,20 +22,19 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* ✅ Kakao Maps SDK 전역 로드 (Geocoder/Map 모두 사용 가능) */}
+        {/* ✅ Kakao SDK를 가장 먼저 로드 (Geocoder, Map 등 사용 가능) */}
         <Script
+          id="kakao-sdk"
           strategy="beforeInteractive"
           src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_API_KEY}&autoload=false&libraries=services`}
         />
       </head>
 
       <body className={inter.className}>
-        {/* ✅ 전역 Provider 계층 */}
         <AuthProvider>
           <NotificationProvider>
-            <KakaoMapContext>
-              {children}
-            </KakaoMapContext>
+            {/* ✅ Kakao SDK 로드 상태를 감지해 전역 공급 */}
+            <KakaoMapProvider>{children}</KakaoMapProvider>
           </NotificationProvider>
         </AuthProvider>
       </body>
