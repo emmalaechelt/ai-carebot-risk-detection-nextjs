@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userResponse = await api.get<User>(`/members/${username}`);
         setUser(userResponse.data);
         
-        router.push('/main');
+        router.push('/dashboard');
       } else {
         throw new Error('Access Token을 찾을 수 없습니다.');
       }

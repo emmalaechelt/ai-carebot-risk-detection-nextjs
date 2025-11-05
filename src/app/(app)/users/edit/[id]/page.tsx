@@ -144,7 +144,7 @@ export default function UserEditPage() {
         }
       } catch {
         alert("이용자 정보를 불러오는 데 실패했습니다.");
-        router.push("/main/users/view");
+        router.push("/users/view");
       }
     };
     fetchSenior();
@@ -285,7 +285,7 @@ export default function UserEditPage() {
       });
 
       alert("이용자 정보가 수정되었습니다.");
-      router.push(`/main/users/view/${seniorId}`);
+      router.push(`/users/view/${seniorId}`);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -465,7 +465,7 @@ export default function UserEditPage() {
           <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 cursor-pointer">
             저장
           </button>
-          <button type="button" onClick={() => router.push(`/main/users/view/${seniorId}`)} className="px-4 py-2 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600 cursor-pointer">
+          <button type="button" onClick={() => router.push(`/users/view/${seniorId}`)} className="px-4 py-2 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600 cursor-pointer">
             취소
           </button>
         </div>

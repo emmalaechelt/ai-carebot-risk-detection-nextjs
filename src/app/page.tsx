@@ -15,7 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) router.push("/main");
+    if (!isLoading && isAuthenticated) router.push("/dashboard");
   }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {

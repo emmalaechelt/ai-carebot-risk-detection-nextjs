@@ -1,4 +1,4 @@
-// src/app/main/setting/page.tsx
+// src/app/setting/page.tsx
 "use client";
 
 import { useEffect, useState } from 'react';

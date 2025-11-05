@@ -113,8 +113,6 @@ export default function DetailedAnalysisPage() {
       const res = await api.get(`/analyze/${id}`);
       console.log(res.data)
       setData(res.data || null);
-      // router.push('/main');
-      // router.refresh();
     } catch (err) {
       console.error("상태 변경 API 호출 실패:", err);
       alert("상태 변경 중 오류가 발생했습니다.");
@@ -128,7 +126,7 @@ export default function DetailedAnalysisPage() {
     try {
       await api.delete(`/analyze/${id}`);
       alert("삭제되었습니다.");
-      router.push("/main/analysis");
+      router.push("/analysis");
     } catch (error) {
       console.error("삭제 실패:", error);
       alert("삭제 실패!");

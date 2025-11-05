@@ -103,7 +103,7 @@ export default function DashboardPage() {
               level={mapLevel}
               onMarkerClick={setSelectedSenior}
               onInfoWindowClick={(s) =>
-                router.push(`/main/analysis/${s.latest_overall_result_id}?senior_id=${s.senior_id}`)
+                router.push(`/analysis/${s.latest_overall_result_id}?senior_id=${s.senior_id}`)
               }
               currentLevel={selectedLevel}
             />

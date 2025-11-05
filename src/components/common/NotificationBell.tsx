@@ -19,10 +19,10 @@ export default function NotificationBell() {
 
     switch (notification.type) {
       case 'ANALYSIS_COMPLETE':
-        router.push(`/main/analysis/${notification.resource_id}`);
+        router.push(`/analysis/${notification.resource_id}`);
         break;
       case 'SENIOR_STATE_CHANGED':
-        router.push(`/main/users/view/${notification.resource_id}`);
+        router.push(`/users/view/${notification.resource_id}`);
         break;
       default:
         console.log(`Navigation not defined for type: ${notification.type}`);

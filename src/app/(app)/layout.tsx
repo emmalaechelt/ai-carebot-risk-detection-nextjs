@@ -1,4 +1,4 @@
-// src/app/main/layout.tsx
+// src/app/layout.tsx
 
 'use client';
 

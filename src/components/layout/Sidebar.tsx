@@ -23,17 +23,17 @@ export default function Sidebar() {
   };
 
   const menuItems: MenuItem[] = [
-    { label: "전체 현황", icon: "/img/status.png", href: "/main" },
-    { label: "이용자 관리", icon: "/img/users.png", href: "/main/users/view" },
-    { label: "인형 관리", icon: "/img/doll.png", href: "/main/dolls" },
-    { label: "전체 분석 결과", icon: "/img/analysis.png", href: "/main/analysis" },
-    { label: "설정", icon: "/img/setting.png", href: "/main/setting" },
+    { label: "전체 현황", icon: "/img/status.png", href: "/dashboard" },
+    { label: "이용자 관리", icon: "/img/users.png", href: "/users/view" },
+    { label: "인형 관리", icon: "/img/doll.png", href: "/dolls" },
+    { label: "전체 분석 결과", icon: "/img/analysis.png", href: "/analysis" },
+    { label: "설정", icon: "/img/setting.png", href: "/setting" },
   ];
 
   const renderMenu = (items: MenuItem[], isSubMenu = false): ReactNode => (
     <ul className={`${isSubMenu ? "ml-4 mt-1 text-base space-y-1" : "space-y-2 text-gray-700"}`}>
       {items.map(item => {
-        const isActive = item.href && (pathname === item.href || (item.href !== "/main" && pathname.startsWith(item.href)));
+        const isActive = item.href && (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)));
         return (
           <li key={item.label}>
             {item.children ? (

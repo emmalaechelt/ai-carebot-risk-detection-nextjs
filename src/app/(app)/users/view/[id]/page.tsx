@@ -285,7 +285,7 @@ export default function UserDetailPage() {
     try {
       await api.delete(`/seniors/${id}`);
       alert("삭제되었습니다.");
-      router.push("/main/users/view"); // 삭제 후 목록 페이지로 이동
+      router.push("/users/view"); // 삭제 후 목록 페이지로 이동
     } catch {
       alert("삭제에 실패했습니다.");
     }
@@ -520,7 +520,7 @@ export default function UserDetailPage() {
                       <tr
                         key={a.id}
                         className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
-                        onClick={() => router.push(`/main/analysis/${a.id}?senior_id=${id}`)}
+                        onClick={() => router.push(`/analysis/${a.id}?senior_id=${id}`)}
                       >
                         <td className={tdClass}>{a.summary}</td>
                         <td className={`${tdClass} text-center ${labelColor} font-semibold`}>{labelText}</td>
@@ -550,7 +550,7 @@ export default function UserDetailPage() {
               <>
                 <button
                   type="button"
-                  onClick={() => router.push(`/main/users/edit/${id}`)}
+                  onClick={() => router.push(`/users/edit/${id}`)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
                 >
                   수정
@@ -559,7 +559,7 @@ export default function UserDetailPage() {
                 <button type="button" onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer">
                   삭제
                 </button>
-                <button type="button" onClick={() => router.push("/main/users/view")} className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 cursor-pointer">
+                <button type="button" onClick={() => router.push("/users/view")} className="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 cursor-pointer">
                   목록으로
                 </button>
               </>

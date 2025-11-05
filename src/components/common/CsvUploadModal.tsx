@@ -67,15 +67,8 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
 
       const analysisId = res.data?.id;
       if (analysisId) {
-        // addNotification({
-        //   id: Date.now(),
-        //   type: "csv_upload",
-        //   message: `CSV 분석이 완료되었습니다. 분석결과 보기 (ID: ${analysisId})`,
-        //   link: `/main/analysis/${analysisId}`,
-        //   isPersistent: false,
-        // });
         onClose();
-        router.push(`/main/analysis/${analysisId}`);
+        router.push(`/analysis/${analysisId}`);
       } else {
         setError("분석 요청은 성공했으나, 결과 ID를 가져오지 못했습니다.");
       }

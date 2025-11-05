@@ -235,12 +235,12 @@ export default function UserRegisterPage() {
 
       if (!newSenior?.id) {
         alert("등록은 완료되었지만 이용자 ID를 가져오지 못했습니다. 대시보드로 이동합니다.");
-        router.push("/main");
+        router.push("/dashboard");
         return;
       }
 
       alert("이용자 등록이 완료되었습니다!");
-      router.push(`/main/view/${newSenior.senior_id}`);
+      router.push(`/view/${newSenior.senior_id}`);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const serverMsg = err.response?.data?.message;

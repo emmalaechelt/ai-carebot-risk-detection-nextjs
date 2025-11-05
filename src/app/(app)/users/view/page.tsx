@@ -109,7 +109,7 @@ export default function UsersViewPage() {
     { id: "index", header: "순번", cell: info => pageIndex * pageSize + info.row.index + 1 },
     { accessorKey: "senior_id", header: "이용자 번호" },
     { accessorKey: "name", header: "이름", cell: info =>
-      <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => router.push(`/main/users/view/${info.row.original.senior_id}`)}>
+      <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => router.push(`/users/view/${info.row.original.senior_id}`)}>
         {info.getValue() as string}
       </span>
     },
@@ -151,7 +151,7 @@ export default function UsersViewPage() {
   };
   const handleSearch = () => fetchData();
   const handleReset = () => { setSearchParams({ name: "", phone: "", gu: "", dong: "", state: "", doll_id: "", age_group: "", sex: "", senior_id: "" }); table.setPageIndex(0); };
-  const handleRegister = () => router.push("/main/users/register");
+  const handleRegister = () => router.push("/users/register");
 
   return (
     <div className="space-y-3 text-black">

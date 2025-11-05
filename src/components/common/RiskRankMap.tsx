@@ -184,7 +184,7 @@ export default function RiskRankMap({
             <div
               onClick={() =>
                 router.push(
-                  `/main/analysis/${selectedSenior.latest_overall_result_id}`
+                  `/analysis/${selectedSenior.latest_overall_result_id}`
                 )
               }
               className="bg-white rounded-lg shadow-lg border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"

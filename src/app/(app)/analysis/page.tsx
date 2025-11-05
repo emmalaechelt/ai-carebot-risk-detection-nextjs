@@ -146,7 +146,7 @@ export default function AnalysisPage() {
           onClick={() => {
             const resultId = row.original.overall_result_id;
             const seniorId = row.original.senior_id;
-            router.push(`/main/analysis/${resultId}?senior_id=${seniorId}`);
+            router.push(`/analysis/${resultId}?senior_id=${seniorId}`);
           }}
           className="text-blue-600 hover:underline text-left cursor-pointer"
         >
