@@ -172,7 +172,7 @@ export default function DetailedAnalysisPage() {
 
       // 대화 목록
       rows.push(["대화 목록"]);
-      rows.push(["순번", "내용", "결과", "긴급", "위험", "주의", "안전", "시간"]);
+      rows.push(["순번", "내용", "결과", "긴급", "위험", "주의", "안전", "일시"]);
       (data.dialogues || []).forEach((dlg, idx) => {
         rows.push([
           idx + 1,
@@ -315,7 +315,7 @@ export default function DetailedAnalysisPage() {
                 <th className="border p-1.5 w-16">위험</th>
                 <th className="border p-1.5 w-16">주의</th>
                 <th className="border p-1.5 w-16">안전</th>
-                <th className="border p-1.5 w-40">시간</th>
+                <th className="border p-1.5 w-40">일시</th>
               </tr>
             </thead>
             <tbody>
@@ -349,7 +349,7 @@ export default function DetailedAnalysisPage() {
                     <td className="border p-1.5 text-black">
                       {(dlg.confidence_scores.positive * 100).toFixed(1)}%
                     </td>
-                    <td className="border p-1.5 text-black text-xs">{time}</td>
+                    <td className="border p-1.5 text-black">{time}</td>
                   </tr>
                 );
               })}

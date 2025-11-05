@@ -111,7 +111,7 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
 
   const markAllAsRead = async () => {
     try {
-      await api.post('/notifications/read-all');
+      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (error) {

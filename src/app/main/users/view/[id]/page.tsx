@@ -51,6 +51,24 @@ const calculateAge = (birthDate: string): number | null => {
   return age;
 };
 
+const formatTimestamp = (timestamp: string): string => {
+  if (!timestamp) return ""; // timestamp가 없을 경우 빈 문자열 반환
+  const date = new Date(timestamp);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  const hoursRaw = date.getHours();
+  const ampm = hoursRaw >= 12 ? '오후' : '오전';
+  const hours = String(hoursRaw % 12 || 12).padStart(2, '0');
+  
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  return `${year}. ${month}. ${day}. ${ampm} ${hours}:${minutes}:${seconds}`;
+};
+
 export default function UserDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -479,9 +497,9 @@ export default function UserDetailPage() {
             <table className={tableClass}>
               <thead className="bg-gray-50">
                 <tr>
-                  <th className={thClass}>분석 내용</th>
-                  <th className={thClass}>결과</th>
-                  <th className={thClass}>날짜</th>
+                  <th className={thClass}>분석 요약</th>
+                  <th className={`${thClass} w-20`}>결과</th>
+                  <th className={`${thClass} w-50`}>분석 일시</th>
                 </tr>
               </thead>
               <tbody>
@@ -500,11 +518,11 @@ export default function UserDetailPage() {
                     <tr
                       key={a.id}
                       className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
-                      onClick={() => router.push(`/main/analysis/${a.id}`)}
+                      onClick={() => router.push(`/main/analysis/${a.id}?senior_id=${id}`)}
                     >
                       <td className={tdClass}>{a.summary}</td>
-                      <td className={`${tdClass} text-center ${labelColor} font-semibold`}>{labelText}</td>
-                      <td className={`${tdClass} text-center`}>{new Date(a.timestamp).toLocaleString("ko-KR")}</td>
+                      <td className={`${tdClass} text-center ${labelColor} font-semibold`}>{labelText}</td>         
+                      <td className={`${tdClass} text-left pl-3`}>{formatTimestamp(a.timestamp)}</td>
                     </tr>
                   );
                 })}
@@ -514,8 +532,6 @@ export default function UserDetailPage() {
             <p className="text-sm text-gray-500 py-4 text-center">최근 분석 기록이 없습니다.</p>
           )}
         </section>
-
-
 
         {/* ----------------- 버튼 영역 ----------------- */}
         <div className="flex justify-center gap-4 pt-4">
