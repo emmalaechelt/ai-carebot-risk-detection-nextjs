@@ -86,6 +86,10 @@ export default function Sidebar() {
       {/* 상단 로고 + 메뉴 */}
       <div>
         <div className="flex items-center border-b h-16 px-4">
+           <Link
+          href="/dashboard"
+          className="flex items-center border-b h-16 transition-colors hover:bg-gray-50 cursor-pointer"
+        >
           <Image
             src="/img/grandparents.png"
             alt="조부모 이모지"
@@ -96,6 +100,7 @@ export default function Sidebar() {
           <span className="ml-2 font-bold text-lg text-black whitespace-nowrap">
             시니어 돌봄 관제시스템
           </span>
+        </Link>
         </div>
         <nav className="flex-1 px-4 py-6">{renderMenu(menuItems)}</nav>
       </div>

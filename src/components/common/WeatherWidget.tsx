@@ -35,13 +35,13 @@ export default function WeatherWidget() {
             ? Number(airData.response.body.items[0].pm10Value)
             : null;
 
-        if (weatherData?.main) {
+        if (weatherData?.dashboard) {
           setWeather({
-            temp: weatherData.main.temp,
-            feelsLike: weatherData.main.feels_like,
+            temp: weatherData.dashboard.temp,
+            feelsLike: weatherData.dashboard.feels_like,
             condition: weatherData.weather[0].description,
             wind: `${weatherData.wind.speed} m/s`,
-            humidity: weatherData.main.humidity,
+            humidity: weatherData.dashboard.humidity,
             rain: weatherData.rain ? weatherData.rain["1h"] : 0,
             pm10,
           });
