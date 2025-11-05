@@ -1,69 +1,30 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/api";
 import StatusSummary from "@/components/common/StatusSummary";
 import RiskRankMap from "@/components/common/RiskRankMap";
 import RiskRankList from "@/components/common/RiskRankList";
-import type { DashboardData, DashboardSenior, RiskLevel } from "@/types";
+import type { DashboardSenior, RiskLevel } from "@/types";
 import KakaoMapProvider from "@/contexts/KakaoMapContext";
+import { useDashboardData } from "@/hooks/useDashboardData"; // ✅ SWR 훅 임포트
 
 const DEFAULT_MAP_CENTER = { lat: 36.3504, lng: 127.3845 };
 const DEFAULT_MAP_LEVEL = 7;
 const ZOOM_ON_SELECT = 4;
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // ✅ 수정됨: SWR 훅으로 데이터 로딩 로직을 모두 대체합니다.
+  const { data, isLoading, isError } = useDashboardData();
+
   const [selectedLevel, setSelectedLevel] = useState<RiskLevel>("EMERGENCY");
   const [selectedSenior, setSelectedSenior] = useState<DashboardSenior | null>(null);
   const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
   const [mapLevel, setMapLevel] = useState(DEFAULT_MAP_LEVEL);
 
-  const eventSourceRef = useRef<EventSource | null>(null);
-
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const resp = await api.get<DashboardData>("/dashboard");
-      setData(resp.data);
-    } catch (err) {
-      console.error(err);
-      setError("대시보드 데이터를 불러오는 데 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
-
-  // SSE 연결 (이하 로직은 변경 없음)
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const url = token
-      ? `/api/notifications/subscribe?access_token=${encodeURIComponent(token)}`
-      : "/api/notifications/subscribe";
-    const es = new EventSource(url, { withCredentials: true });
-    eventSourceRef.current = es;
-
-    es.addEventListener("notification", (event: MessageEvent) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (["ANALYSIS_COMPLETE", "SENIOR_STATE_CHANGED"].includes(payload.type))
-          fetchDashboardData();
-      } catch (err) {
-        console.error("SSE 파싱 오류", err);
-      }
-    });
-
-    return () => {
-      es.close();
-      eventSourceRef.current = null;
-    };
-  }, [fetchDashboardData]);
-
+  // ✅ 수정됨: useMemo의 의존성을 SWR에서 온 `data`로 변경합니다.
   const filteredSeniors = useMemo(() => {
     if (!data?.seniors_by_state) return [];
     const key = selectedLevel.toLowerCase() as keyof typeof data.seniors_by_state;
@@ -81,43 +42,50 @@ export default function DashboardPage() {
       setMapLevel(DEFAULT_MAP_LEVEL);
     }
   }, [selectedSenior]);
-
-  if (error) return <p className="text-center mt-10 text-red-600">{error}</p>;
-  if (loading && !data) return <div>Loading...</div>;
+  
+  // ✅ 수정됨: 에러/로딩 상태를 SWR 훅의 상태로 변경합니다.
+  if (isError) return <p className="text-center mt-10 text-red-600">대시보드 데이터를 불러오는 데 실패했습니다.</p>;
+  if (isLoading) return <div>Loading...</div>;
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
 
   return (
-    <KakaoMapProvider>
-      <div className="flex flex-col h-full space-y-4">
-        <StatusSummary
-          counts={data.state_count}
-          selectedLevel={selectedLevel}
-          onSelectLevel={setSelectedLevel}
-        />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-          <div className="md:col-span-2">
-            <RiskRankMap
-              seniors={filteredSeniors}
-              selectedSenior={selectedSenior}
-              mapCenter={mapCenter}
-              level={mapLevel}
-              onMarkerClick={setSelectedSenior}
-              onInfoWindowClick={(s) =>
-                router.push(`/analysis/${s.latest_overall_result_id}?senior_id=${s.senior_id}`)
-              }
-              currentLevel={selectedLevel}
-            />
-          </div>
-          <div className="md:col-span-1">
-            <RiskRankList
-              seniors={filteredSeniors}
-              selectedSeniorId={selectedSenior?.senior_id ?? null}
-              onSeniorSelect={setSelectedSenior}
-              riskLevelLabel={selectedLevel}
-            />
-          </div>
+    <div className="flex flex-col h-full space-y-4">
+      <StatusSummary
+        counts={data.state_count}
+        selectedLevel={selectedLevel}
+        onSelectLevel={setSelectedLevel}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+        <div className="md:col-span-2">
+          <RiskRankMap
+            seniors={filteredSeniors}
+            selectedSenior={selectedSenior}
+            mapCenter={mapCenter}
+            level={mapLevel}
+            onMarkerClick={setSelectedSenior}
+            onInfoWindowClick={(s) =>
+              router.push(`/analysis/${s.latest_overall_result_id}?senior_id=${s.senior_id}`)
+            }
+            currentLevel={selectedLevel}
+          />
+        </div>
+        <div className="md:col-span-1">
+          <RiskRankList
+            seniors={filteredSeniors}
+            selectedSeniorId={selectedSenior?.senior_id ?? null}
+            onSeniorSelect={setSelectedSenior}
+            riskLevelLabel={selectedLevel}
+          />
         </div>
       </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <KakaoMapProvider>
+      <DashboardContent />
     </KakaoMapProvider>
   );
 }

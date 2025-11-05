@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaBell, FaTrashAlt, FaCheckDouble } from 'react-icons/fa';
 import { useNotificationContext } from '@/contexts/NotificationContext';
-import type { Notification } from '@/types/notification';
+import type { Notification } from '@/types'; 
 
 export default function NotificationBell() {
   const router = useRouter();
@@ -17,16 +17,23 @@ export default function NotificationBell() {
   const handleClick = async (notification: Notification) => {
     if (!notification.is_read) await markAsRead(notification.notification_id);
 
-    switch (notification.type) {
-      case 'ANALYSIS_COMPLETE':
-        router.push(`/analysis/${notification.resource_id}`);
-        break;
-      case 'SENIOR_STATE_CHANGED':
-        router.push(`/users/view/${notification.resource_id}`);
-        break;
-      default:
-        console.log(`Navigation not defined for type: ${notification.type}`);
-        break;
+    // ✅ [개선] router.push에 notification.link를 사용하여 더 유연하게 만듭니다.
+    // 이렇게 하면 서버에서 보내주는 link 경로에 따라 어디로든 이동시킬 수 있습니다.
+    if (notification.link) {
+      router.push(notification.link);
+    } else {
+      // 기존 로직은 fallback으로 유지
+      switch (notification.type) {
+        case 'ANALYSIS_COMPLETE':
+          router.push(`/analysis/${notification.resource_id}`);
+          break;
+        case 'SENIOR_STATE_CHANGED':
+          router.push(`/users/view/${notification.resource_id}`);
+          break;
+        default:
+          console.log(`Navigation not defined for type: ${notification.type}`);
+          break;
+      }
     }
     setIsOpen(false);
   };
@@ -79,9 +86,7 @@ export default function NotificationBell() {
                   onClick={() => handleClick(n)}
                   className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
                     !n.is_read
-                      ? n.type === 'ANALYSIS_COMPLETE'
-                        ? 'bg-blue-50'
-                        : 'bg-gray-100'
+                      ? 'bg-blue-50 font-semibold'
                       : 'bg-white'
                   }`}
                 >

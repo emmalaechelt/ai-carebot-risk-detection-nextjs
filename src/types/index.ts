@@ -92,6 +92,22 @@ export interface SeniorListView {
 }
 
 // ----------------------------------------------------------
+// --- 알림 (Notification) ---
+// ----------------------------------------------------------
+export type NotificationType = 'ANALYSIS_COMPLETE' | 'SENIOR_STATE_CHANGED' | 'EMERGENCY_DETECTED' | 'OTHER';
+
+export interface Notification {
+  notification_id: number;
+  type: NotificationType;
+  message: string; 
+  summary: string;
+  is_read: boolean;
+  created_at: string;
+  resource_id?: number;
+  link: string;
+}
+
+// ----------------------------------------------------------
 // --- 대시보드 데이터 (GET /dashboard) ---
 // ----------------------------------------------------------
 

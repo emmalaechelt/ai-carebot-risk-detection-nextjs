@@ -81,14 +81,12 @@ export default function Sidebar() {
   );
 
   return (
-    // 수정된 부분: 너비를 w-60으로 조정하여 글자 잘림 방지, 오른쪽 테두리(border-r)는 제거된 상태 유지
     <aside className="w-60 bg-white flex flex-col shadow-sm justify-between">
       {/* 상단 로고 + 메뉴 */}
       <div>
-        <div className="flex items-center border-b h-16 px-4">
-           <Link
+        <Link
           href="/dashboard"
-          className="flex items-center border-b h-16 transition-colors hover:bg-gray-50 cursor-pointer"
+          className="flex items-center border-b h-16 px-4 transition-colors hover:bg-gray-50 cursor-pointer"
         >
           <Image
             src="/img/grandparents.png"
@@ -101,7 +99,6 @@ export default function Sidebar() {
             시니어 돌봄 관제시스템
           </span>
         </Link>
-        </div>
         <nav className="flex-1 px-4 py-6">{renderMenu(menuItems)}</nav>
       </div>
 

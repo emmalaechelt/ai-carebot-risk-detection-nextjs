@@ -240,7 +240,7 @@ export default function UserRegisterPage() {
       }
 
       alert("이용자 등록이 완료되었습니다!");
-      router.push(`/view/${newSenior.senior_id}`);
+      router.push(`/users/view/${newSenior.id}`);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const serverMsg = err.response?.data?.message;
