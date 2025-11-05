@@ -36,16 +36,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <NotificationProvider>
-            <KakaoMapProvider>
               <div className="relative min-h-screen">
-
-                {/* 페이지 내용 */}
                 <main>{children}</main>
-
-                {/* 긴급 토스트 */}
                 <EmergencyToast />
               </div>
-            </KakaoMapProvider>
           </NotificationProvider>
         </AuthProvider>
       </body>

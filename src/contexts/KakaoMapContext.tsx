@@ -1,7 +1,6 @@
-// src/contexts/KakaoMapContext.tsx
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 interface KakaoMapContextValue {
   isKakaoLoaded: boolean;
@@ -11,37 +10,36 @@ const KakaoMapContext = createContext<KakaoMapContextValue>({
   isKakaoLoaded: false,
 });
 
-export default function KakaoMapProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function KakaoMapProvider({ children }: { children: ReactNode }) {
   const [isKakaoLoaded, setIsKakaoLoaded] = useState(false);
 
   useEffect(() => {
-    // 이미 로드된 경우
     if (window.kakao?.maps) {
       setIsKakaoLoaded(true);
       return;
     }
 
-    // autoload=false이므로 직접 init
-    const checkAndInit = () => {
-      if (window.kakao && window.kakao.maps && !window.kakao.maps.LatLng) {
-        window.kakao.maps.load(() => {
-          setIsKakaoLoaded(true);
-          console.log("✅ Kakao Maps SDK loaded successfully");
-        });
-      } else if (window.kakao?.maps) {
+    const script = document.createElement("script");
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&autoload=false&libraries=services`;
+    script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(() => {
         setIsKakaoLoaded(true);
-      } else {
-        console.warn("⚠️ Kakao Maps SDK not yet available, retrying...");
-        setTimeout(checkAndInit, 300);
-      }
+      });
     };
-
-    checkAndInit();
+    document.head.appendChild(script);
   }, []);
+
+  // --- ⬇️ 핵심 수정 부분 ---
+  // isKakaoLoaded가 false이면, 자식 컴포넌트(children)를 렌더링하지 않고 로딩 화면을 보여줍니다.
+  // 이렇게 하면 자식 컴포넌트에서는 더 이상 로딩 상태를 신경 쓸 필요가 없습니다.
+  if (!isKakaoLoaded) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-gray-500">
+        지도 로딩 중...
+      </div>
+    );
+  }
 
   return (
     <KakaoMapContext.Provider value={{ isKakaoLoaded }}>
@@ -50,5 +48,4 @@ export default function KakaoMapProvider({
   );
 }
 
-// ✅ 커스텀 훅
 export const useKakaoMap = () => useContext(KakaoMapContext);
