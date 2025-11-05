@@ -1,5 +1,3 @@
-// src/app/main/page.tsx
-
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -9,6 +7,8 @@ import StatusSummary from "@/components/common/StatusSummary";
 import RiskRankMap from "@/components/common/RiskRankMap";
 import RiskRankList from "@/components/common/RiskRankList";
 import type { DashboardData, DashboardSenior, RiskLevel } from "@/types";
+// --- ⬇️ 1번: useKakaoMap 훅을 import 합니다 ---
+import { useKakaoMap } from "@/contexts/KakaoMapContext";
 
 const DEFAULT_MAP_CENTER = { lat: 36.3504, lng: 127.3845 };
 const DEFAULT_MAP_LEVEL = 7;
@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const [selectedSenior, setSelectedSenior] = useState<DashboardSenior | null>(null);
   const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
   const [mapLevel, setMapLevel] = useState(DEFAULT_MAP_LEVEL);
+  
+  // --- ⬇️ 2번: KakaoMapContext에서 isKakaoLoaded 상태를 가져옵니다 ---
+  const { isKakaoLoaded } = useKakaoMap();
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -88,39 +91,45 @@ export default function DashboardPage() {
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
 
   return (
-    /* --- 수정된 부분: flex 컨테이너로 변경 --- */
-    // 이유: h-full과 flex-col을 사용해 부모 컴포넌트(MainLayout)의 높이에 맞춰 콘텐츠를 채우도록 설정.
-    // 기존의 불필요한 p-4 여백을 제거하고 space-y-4로 내부 간격만 조절.
     <div className="flex flex-col h-full space-y-4">
       <StatusSummary
         counts={data.state_count}
         selectedLevel={selectedLevel}
         onSelectLevel={setSelectedLevel}
       />
-      {/* --- 수정된 부분: 고정 높이 제거 및 flex-1 추가 --- */}
-      {/* 이유: 스크롤의 핵심 원인이었던 h-[600px]를 제거. flex-1을 추가하여 StatusSummary를 제외한 나머지 모든 수직 공간을 채우도록 함. */}
+      
+      {/* --- ⬇️ 3번: isKakaoLoaded 상태를 확인하는 조건부 렌더링 추가 --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-        <div className="md:col-span-2">
-          <RiskRankMap
-            seniors={filteredSeniors}
-            selectedSenior={selectedSenior}
-            mapCenter={mapCenter}
-            level={mapLevel}
-            onMarkerClick={setSelectedSenior}
-            onInfoWindowClick={(s) =>
-              router.push(`/analysis/${s.latest_overall_result_id}/page?senior_id=${s.senior_id}`)
-            }
-            currentLevel={selectedLevel}
-          />
-        </div>
-        <div className="md:col-span-1">
-          <RiskRankList
-            seniors={filteredSeniors}
-            selectedSeniorId={selectedSenior?.senior_id ?? null}
-            onSeniorSelect={setSelectedSenior}
-            riskLevelLabel={selectedLevel}
-          />
-        </div>
+        {isKakaoLoaded ? (
+          <>
+            <div className="md:col-span-2">
+              <RiskRankMap
+                seniors={filteredSeniors}
+                selectedSenior={selectedSenior}
+                mapCenter={mapCenter}
+                level={mapLevel}
+                onMarkerClick={setSelectedSenior}
+                onInfoWindowClick={(s) =>
+                  router.push(`/main/analysis/${s.latest_overall_result_id}?senior_id=${s.senior_id}`)
+                }
+                currentLevel={selectedLevel}
+              />
+            </div>
+            <div className="md:col-span-1">
+              <RiskRankList
+                seniors={filteredSeniors}
+                selectedSeniorId={selectedSenior?.senior_id ?? null}
+                onSeniorSelect={setSelectedSenior}
+                riskLevelLabel={selectedLevel}
+              />
+            </div>
+          </>
+        ) : (
+          // 지도가 로딩되는 동안 보여줄 화면
+          <div className="md:col-span-3 text-center py-10 text-gray-500">
+            지도 로딩 중...
+          </div>
+        )}
       </div>
     </div>
   );

@@ -265,7 +265,7 @@ export default function AnalysisPage() {
 
   return (
     <div className="space-y-2 text-black">
-      <div className="mb-2">
+      <div className="mb-3">
         <div className="text-center">
           <h2 className="text-2xl font-bold">전체 분석 결과</h2>
         </div>

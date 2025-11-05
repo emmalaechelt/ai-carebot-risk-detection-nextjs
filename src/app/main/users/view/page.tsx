@@ -154,7 +154,7 @@ export default function UsersViewPage() {
   const handleRegister = () => router.push("/main/users/register");
 
   return (
-    <div className="space-y-2 text-black">
+    <div className="space-y-3 text-black">
       <h2 className="text-2xl font-bold text-center">이용자 관리</h2>
 
       {/* 검색창 */}
