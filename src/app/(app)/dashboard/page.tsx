@@ -11,7 +11,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 
 const DEFAULT_MAP_CENTER = { lat: 36.3504, lng: 127.3845 };
 const DEFAULT_MAP_LEVEL = 8;
-const ZOOM_ON_SELECT = 5;
+const ZOOM_ON_SELECT = 4;
 
 function DashboardContent() {
   const router = useRouter();

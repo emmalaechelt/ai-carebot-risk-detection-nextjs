@@ -58,24 +58,27 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           }
           return;
         }
-        
+
         // 인증 실패 시 재연결 시도를 중단합니다.
         if (res.status === 401 || res.status === 403) {
-           console.error('SSE 인증 실패, 연결을 중단합니다.');
-           controller.abort();
+          console.error('SSE 인증 실패, 연결을 중단합니다.');
+          controller.abort();
         }
       },
       onmessage: (event) => {
         try {
           const newNotification: Notification = JSON.parse(event.data);
-          
           setNotifications(prev => [newNotification, ...prev]);
-          
+
           if (!newNotification.is_read) {
             setUnreadCount(prev => prev + 1);
           }
 
-          if (newNotification.type === 'EMERGENCY_DETECTED' || newNotification.message.includes('긴급')) {
+          if (
+            newNotification.type?.toUpperCase().includes('EMERGENCY') ||
+            newNotification.message?.includes('긴급') ||
+            newNotification.message?.includes('응급')
+          ) {
             setToastNotifications(prev => [...prev, newNotification]);
           }
         } catch (e) {
@@ -127,7 +130,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const clearNotifications = async () => {
-     try {
+    try {
       await api.delete('/notifications');
       setNotifications([]);
       setUnreadCount(0);
@@ -136,7 +139,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       console.error("전체 알림 삭제 실패:", error);
     }
   };
-  
+
   const clearToast = (notificationId: number) => {
     setToastNotifications(prev => prev.filter(n => n.notification_id !== notificationId));
   };
