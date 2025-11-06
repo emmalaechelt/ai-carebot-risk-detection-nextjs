@@ -86,7 +86,7 @@ export default function Sidebar() {
       <div>
         <Link
           href="/dashboard"
-          className="flex items-center border-b h-16 px-4 transition-colors hover:bg-gray-50 cursor-pointer"
+          className="flex items-center border-b border-gray-200 h-16 px-4 transition-colors hover:bg-gray-50 cursor-pointer"
         >
           <Image
             src="/img/grandparents.png"

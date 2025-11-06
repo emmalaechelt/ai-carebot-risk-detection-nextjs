@@ -129,7 +129,6 @@ export default function RiskRankMap({
                 ) + 1;
             }
 
-            // ✅ 여기 수정됨: key가 항상 고유하도록 변경
             const markerKey = `${senior.latest_overall_result_id ?? senior.senior_id ?? 'unknown'}-${idx}`;
 
             return (
@@ -178,15 +177,16 @@ export default function RiskRankMap({
               lat: Number(selectedSenior.latitude),
               lng: Number(selectedSenior.longitude),
             }}
-            yAnchor={1.35}
+            yAnchor={1.5}
             xAnchor={0.5}
+            zIndex={101}
           >
             <div
-              onClick={() =>
-                router.push(
-                  `/analysis/${selectedSenior.latest_overall_result_id}`
-                )
-              }
+              onClick={() => {
+                if (selectedSenior.latest_overall_result_id) {
+                  router.push(`/analysis/${selectedSenior.latest_overall_result_id}`);
+                }
+              }}
               className="bg-white rounded-lg shadow-lg border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"
               style={{
                 display: 'inline-block',
@@ -195,95 +195,71 @@ export default function RiskRankMap({
                 wordBreak: 'keep-all',
                 minWidth: '400px',
                 maxWidth: '90vw',
+                cursor: selectedSenior.latest_overall_result_id ? 'pointer' : 'default',
               }}
             >
               <div className="font-bold text-base mb-1 text-blue-700">
                 {`${selectedSenior.name} (${selectedSenior.age}세)`}
               </div>
-              <div className="space-y-1 text-xs text-gray-800">
+              <div className="space-y-1.5 text-sm text-gray-800">
                 <div>
                   <span className="font-semibold">· 요약 : </span>
-                  <span>{selectedSenior.summary ?? '정보없음'}</span>
+                  <span>{selectedSenior.summary ?? '최근 분석 결과가 없습니다.'}</span>
                 </div>
                 <div>
                   <span className="font-semibold">· 대처방안 : </span>
                   <span style={{ whiteSpace: 'pre-line' }}>
-                    {selectedSenior.treatment_plan ?? '정보없음'}
+                    {selectedSenior.treatment_plan ?? '최근 분석 결과가 없습니다.'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-xs">
-                  <span className="font-semibold">· 조치 여부 : </span>
-                  {selectedSenior.is_resolved ? (
-                    <span className="px-2 py-0.5 font-semibold text-white bg-green-500 rounded-full">
-                      조치 완료
-                    </span>
+                <div className="flex items-center gap-2">
+                  {selectedSenior.resolved_label ? (
+                    <>
+                      <span className="font-semibold">· 조치 여부 : </span>
+                      {selectedSenior.is_resolved === false ? (
+                        <span className="px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                          확인 필요
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full">
+                          조치 완료
+                        </span>
+                      )}
+
+                      {(() => {
+                        const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
+                          EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급' },
+                          CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험' },
+                          DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' },
+                          POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전' },
+                        };
+                        const currentLabel = selectedSenior.resolved_label;
+                        const previousLabel = selectedSenior.pre_resolved_label ?? currentLabel;
+                        const currentColor = riskColors[currentLabel];
+                        const previousColor = riskColors[previousLabel];
+
+                        return (
+                          <>
+                            <span className="text-xs text-gray-500">|</span>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${previousColor.text} ${previousColor.border}`}>
+                              {previousColor.label}
+                            </span>
+                            <span className="text-sm text-gray-500">→</span>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${currentColor.text} ${currentColor.border}`}>
+                              {currentColor.label}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </>
                   ) : (
-                    <span className="px-2 py-0.5 font-semibold text-white bg-red-500 rounded-full">
-                      확인 필요
-                    </span>
+                    <>
+                      <span className="font-semibold">· 현재 상태 : </span>
+                      <span className="px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full">
+                        안전
+                      </span>
+                    </>
                   )}
-
-                  {/* 상태 표시와 화살표 */}
-                  {(() => {
-                    const riskColors: Record<
-                      RiskLevel,
-                      { text: string; bg: string; border: string; label: string }
-                    > = {
-                      EMERGENCY: {
-                        text: 'text-red-600',
-                        bg: 'bg-red-50',
-                        border: 'border-red-200',
-                        label: '긴급',
-                      },
-                      CRITICAL: {
-                        text: 'text-orange-600',
-                        bg: 'bg-orange-50',
-                        border: 'border-orange-200',
-                        label: '위험',
-                      },
-                      DANGER: {
-                        text: 'text-yellow-500',
-                        bg: 'bg-yellow-50',
-                        border: 'border-yellow-200',
-                        label: '주의',
-                      },
-                      POSITIVE: {
-                        text: 'text-green-600',
-                        bg: 'bg-green-50',
-                        border: 'border-green-200',
-                        label: '안전',
-                      },
-                    };
-
-                    const currentLabel =
-                      selectedSenior.resolved_label ?? 'POSITIVE';
-                    const previousLabel =
-                      selectedSenior.pre_resolved_label ?? currentLabel;
-
-                    const currentColor = riskColors[currentLabel];
-                    const previousColor = riskColors[previousLabel];
-
-                    return (
-                      <>
-                        {/* 이전 상태 */}
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${previousColor.text} ${previousColor.border}`}
-                        >
-                          {previousColor.label}
-                        </span>
-
-                        {/* 화살표 */}
-                        <span className="text-xs text-gray-500">→</span>
-
-                        {/* 현재 상태 */}
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${currentColor.text} ${currentColor.border}`}
-                        >
-                          {currentColor.label}
-                        </span>
-                      </>
-                    );
-                  })()}
                 </div>
               </div>
             </div>
