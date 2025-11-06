@@ -24,11 +24,10 @@ function DashboardContent() {
   const [mapLevel, setMapLevel] = useState(DEFAULT_MAP_LEVEL);
 
   useEffect(() => {
-  // 상태 변경 시: 선택된 시니어 초기화 + 지도도 기본 위치로 복귀
-  setSelectedSenior(null);
-  setMapCenter(DEFAULT_MAP_CENTER);
-  setMapLevel(DEFAULT_MAP_LEVEL);
-}, [selectedLevel]);
+    setSelectedSenior(null);
+    setMapCenter(DEFAULT_MAP_CENTER);
+    setMapLevel(DEFAULT_MAP_LEVEL);
+  }, [selectedLevel]);
 
   const filteredSeniors = useMemo(() => {
     if (!data?.seniors_by_state) return [];
@@ -43,7 +42,6 @@ function DashboardContent() {
       setMapCenter({ lat: selectedSenior.latitude, lng: selectedSenior.longitude });
       setMapLevel(ZOOM_ON_SELECT);
     } else {
-      // selectedSenior가 null이 되면, 지도의 중앙과 줌 레벨을 기본값으로 되돌립니다.
       setMapCenter(DEFAULT_MAP_CENTER);
       setMapLevel(DEFAULT_MAP_LEVEL);
     }
@@ -72,6 +70,8 @@ function DashboardContent() {
               router.push(`/analysis/${s.latest_overall_result_id}?senior_id=${s.senior_id}`)
             }
             currentLevel={selectedLevel}
+            // isDashboardView prop은 자식 컴포넌트의 기본값이 false이므로 명시적으로 전달해줍니다.
+            isDashboardView={true}
           />
         </div>
         <div className="md:col-span-1">

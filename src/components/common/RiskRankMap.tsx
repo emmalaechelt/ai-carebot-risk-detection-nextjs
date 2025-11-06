@@ -16,6 +16,7 @@ interface RiskRankMapProps {
   isDashboardView?: boolean;
 }
 
+// stateColors는 이제 마커에서 사용되지 않지만, 다른 곳에서 필요할 수 있어 유지합니다.
 const stateColors: Record<RiskLevel, string> = {
   EMERGENCY: '#FF4C4C',
   CRITICAL: '#FF9900',
@@ -33,73 +34,43 @@ export default function RiskRankMap({
   currentLevel,
   isDashboardView = false,
 }: RiskRankMapProps) {
+  // ✨ 기존의 내부 상태 관리 로직을 그대로 유지합니다.
   const [zoomLevel, setZoomLevel] = useState(level);
   const [center, setCenter] = useState(mapCenter);
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const router = useRouter();
 
   useEffect(() => setZoomLevel(level), [level]);
-
-  // 화면 크기 추적
+  
+  // ✨ 기존의 지도 이동 로직을 그대로 유지합니다.
   useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    if (
+      selectedSenior?.latitude != null &&
+      selectedSenior?.longitude != null
+    ) {
+      const timer = setTimeout(() => {
+        setCenter({
+          lat: Number(selectedSenior.latitude),
+          lng: Number(selectedSenior.longitude),
+        });
+        // 부자연스러움을 유발했던 Math.max(prev, 6) 부분을 제거하고 부모가 주는 레벨을 우선적으로 따르도록 수정
+        // 만약 특정 레벨 이상으로 확대되길 원한다면, 이 부분을 다시 조정할 수 있습니다.
+        setZoomLevel(level); 
+      }, 100);
 
-  useEffect(() => {
-  if (
-    selectedSenior?.latitude != null &&
-    selectedSenior?.longitude != null
-  ) {
-    // 👇 리렌더가 안정화된 다음 실행되도록 setTimeout으로 살짝 지연
-    const timer = setTimeout(() => {
-      setCenter({
-        lat: Number(selectedSenior.latitude),
-        lng: Number(selectedSenior.longitude),
-      });
-      setZoomLevel((prev) => Math.max(prev, 6));
-    }, 100); // 0.1초 지연
+      return () => clearTimeout(timer);
+    } else {
+      setCenter(mapCenter);
+    }
+  }, [selectedSenior, mapCenter, level]);
 
-    return () => clearTimeout(timer);
-  } else {
-    setCenter(mapCenter);
-  }
-}, [selectedSenior, mapCenter]);
-
+  // ✨ 수정된 부분: isDashboardView 여부와 관계없이 selectedSenior가 있으면 인포윈도우가 표시되도록 조건을 변경
   const shouldShowInfoWindow =
-    !isDashboardView &&
     selectedSenior?.latitude !== null &&
     selectedSenior?.longitude !== null &&
     selectedSenior?.latitude !== undefined &&
     selectedSenior?.longitude !== undefined;
 
-  const getMarkerSize = () => Math.min(24 + (zoomLevel - 5) * 2, 40);
-  const getFontSize = () => Math.min(12 + Math.floor((zoomLevel - 5) / 2), 16);
-  const getTopOffset = () => {
-    const base = getMarkerSize() + 4;
-    if (windowSize.height < 500) return base + 6;
-    if (windowSize.height < 800) return base + 4;
-    return base;
-  };
-
-  const emergencySeniors = seniors.filter(
-    (s) => s.resolved_label === 'EMERGENCY'
-  );
-
-  // 겹침 방지: 같은 위치 근처면 위로 살짝 이동
-  const getAdjustedTop = (senior: DashboardSenior, idx: number) => {
-    const sameLatLngCount = emergencySeniors.filter(
-      (s, i) =>
-        i < idx &&
-        s.latitude === senior.latitude &&
-        s.longitude === senior.longitude
-    ).length;
-    return getTopOffset() + sameLatLngCount * 12; // 마커 겹침 간격
-  };
+  // ⛔️ 원형 마커가 제거되었으므로 관련 함수들을 모두 삭제하여 코드를 정리했습니다.
 
   return (
     <div className="w-full h-full rounded-lg overflow-hidden shadow-xl relative">
@@ -120,16 +91,6 @@ export default function RiskRankMap({
           )
           .map((senior, idx) => {
             const isSelected = selectedSenior?.senior_id === senior.senior_id;
-            const circleSize = getMarkerSize();
-            const fontSize = getFontSize();
-
-            let indexNumber = 0;
-            // `resolved_label` 대신 `currentLevel`을 기준으로 조건을 변경합니다.
-            if (isDashboardView && currentLevel === 'EMERGENCY') {
-              // seniors 배열 (현재 '긴급' 목록)에서 순번을 찾습니다.
-              indexNumber = seniors.findIndex(s => s.senior_id === senior.senior_id) + 1;
-            }
-
             const markerKey = `${senior.latest_overall_result_id ?? senior.senior_id ?? 'unknown'}-${idx}`;
 
             return (
@@ -144,35 +105,14 @@ export default function RiskRankMap({
                   if (!isDashboardView) onMarkerClick(senior);
                 }}
               >
-                {isDashboardView ? (
-                  <div
-                    style={{
-                      width: `${circleSize}px`,
-                      height: `${circleSize}px`,
-                      borderRadius: '50%',
-                      backgroundColor: stateColors[currentLevel],
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: `${fontSize}px`,
-                      position: 'absolute',
-                      top: `-${getAdjustedTop(senior, idx)}px`,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      userSelect: 'none',
-                      border: '1px solid #fff',
-                    }}
-                  >
-                    {currentLevel === 'EMERGENCY' ? indexNumber : ''}
-                  </div>
-                ) : null}
+                {/* ✨ 수정된 부분: isDashboardView일 때 렌더링되던 동그란 원과 숫자를 모두 제거했습니다. */}
+                {/* 이제 자식 엘리먼트가 없으므로 카카오맵 기본 마커(핀)가 표시됩니다. */}
               </MapMarker>
             );
           })}
 
-        {shouldShowInfoWindow && (
+        {/* shouldShowInfoWindow 조건이 수정되어 이제 대시보드에서도 인포윈도우가 잘 나타납니다. */}
+        {shouldShowInfoWindow && selectedSenior && (
           <CustomOverlayMap
             position={{
               lat: Number(selectedSenior.latitude),
@@ -184,8 +124,9 @@ export default function RiskRankMap({
           >
             <div
               onClick={() => {
+                // ✨ onInfoWindowClick을 사용하도록 로직을 일관성 있게 수정했습니다.
                 if (selectedSenior.latest_overall_result_id) {
-                  router.push(`/analysis/${selectedSenior.latest_overall_result_id}`);
+                  onInfoWindowClick(selectedSenior);
                 }
               }}
               className="bg-white rounded-lg shadow-lg border-2 border-blue-500 cursor-pointer hover:shadow-2xl transition-shadow"
@@ -215,7 +156,6 @@ export default function RiskRankMap({
                 </div>
                 <div className="flex items-center gap-2">
                   {(() => {
-                    // 1. riskColors 객체를 if-else문 바깥에서 한 번만 정의합니다.
                     const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
                       EMERGENCY: { text: 'text-red-600', bg: 'bg-red-500', border: 'border-red-200', label: '긴급' },
                       CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-500', border: 'border-orange-200', label: '위험' },
@@ -223,9 +163,7 @@ export default function RiskRankMap({
                       POSITIVE: { text: 'text-green-600', bg: 'bg-green-500', border: 'border-green-200', label: '안전' },
                     };
 
-                    // 2. latest_overall_result_id 유무로 분기합니다.
                     if (selectedSenior.latest_overall_result_id) {
-                      // --- 분석 결과가 있을 때 ---
                       const currentLabel = selectedSenior.resolved_label ?? 'POSITIVE';
                       const previousLabel = selectedSenior.pre_resolved_label ?? currentLabel;
                       const currentColor = riskColors[currentLabel];
@@ -251,7 +189,6 @@ export default function RiskRankMap({
                         </>
                       );
                     } else {
-                      // --- 분석 결과가 없을 때 (신규 등록 등) ---
                       return (
                         <>
                           <span className="font-semibold">· 현재 상태 : </span>

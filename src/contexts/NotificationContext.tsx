@@ -31,7 +31,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    // 로딩 중이거나 로그아웃 상태일 때는 SSE 연결을 시도하지 않습니다.
     if (isLoading || !isAuthenticated) {
       return;
     }
@@ -48,7 +47,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       onopen: async (res) => {
         if (res.ok) {
           console.log("SSE connection established.");
-          // 연결 성공 시, 최신 알림 목록을 한 번 불러와 동기화합니다.
           try {
             const response = await api.get<Notification[]>('/notifications');
             setNotifications(response.data);
@@ -58,52 +56,59 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           }
           return;
         }
-
-        // 인증 실패 시 재연결 시도를 중단합니다.
         if (res.status === 401 || res.status === 403) {
           console.error('SSE 인증 실패, 연결을 중단합니다.');
           controller.abort();
         }
       },
       onmessage: (event) => {
+        // Keep-alive 메시지 등 빈 데이터는 무시
+        if (!event.data) return;
+
         try {
           const newNotification: Notification = JSON.parse(event.data);
+          
+          // ✨ 디버깅용 로그 추가
+          console.log('새 알림 수신:', newNotification);
+
           setNotifications(prev => [newNotification, ...prev]);
 
           if (!newNotification.is_read) {
             setUnreadCount(prev => prev + 1);
           }
+          
+          const message = newNotification.message || '';
+          const type = newNotification.type || '';
 
-          if (
-            newNotification.type?.toUpperCase().includes('EMERGENCY') ||
-            newNotification.message?.includes('긴급') ||
-            newNotification.message?.includes('응급')
-          ) {
+          // 긴급/응급 토스트 조건 확인
+          const isEmergency = type.toUpperCase().includes('EMERGENCY') ||
+                              message.includes('긴급') ||
+                              message.includes('응급');
+          
+          // ✨ 디버깅용 로그 추가
+          console.log(`긴급 알림 여부: ${isEmergency}`);
+
+          if (isEmergency) {
             setToastNotifications(prev => [...prev, newNotification]);
           }
         } catch (e) {
-          // Keep-alive 메시지 등 JSON이 아닌 데이터는 무시합니다.
+          console.error('SSE 메시지 파싱 실패:', e);
         }
       },
       onerror: (err) => {
         console.error("SSE Error:", err);
-        // AbortError는 사용자가 페이지를 떠나는 등 의도된 종료이므로 재연결하지 않습니다.
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        // 이외의 모든 오류 발생 시, 라이브러리가 자동으로 재연결을 시도하도록 에러를 다시 던집니다.
         throw err;
       },
-      // --- ⬇️ 오류의 원인이었던 retry 속성을 완전히 제거했습니다 ---
     });
 
-    // 컴포넌트가 언마운트될 때 SSE 연결을 확실히 종료합니다.
     return () => {
       controller.abort();
+      console.log("SSE connection closed.");
     };
   }, [isLoading, isAuthenticated]);
-
-  // --- (이하 함수들은 변경 없음) ---
 
   const markAsRead = async (notificationId: number) => {
     const target = notifications.find(n => n.notification_id === notificationId);
