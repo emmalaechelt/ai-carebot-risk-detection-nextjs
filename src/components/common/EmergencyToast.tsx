@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useNotificationContext } from '@/contexts/NotificationContext';
-import type { Notification } from '@/types/notification';
+import type { Notification } from '@/types';
 
 export default function EmergencyToast() {
   const { toastNotifications, clearToast } = useNotificationContext();

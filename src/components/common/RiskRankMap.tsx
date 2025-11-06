@@ -50,23 +50,25 @@ export default function RiskRankMap({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 카드 클릭 시 중앙 이동
   useEffect(() => {
-    if (
-      selectedSenior?.latitude !== null &&
-      selectedSenior?.longitude !== null &&
-      selectedSenior?.latitude !== undefined &&
-      selectedSenior?.longitude !== undefined
-    ) {
+  if (
+    selectedSenior?.latitude != null &&
+    selectedSenior?.longitude != null
+  ) {
+    // 👇 리렌더가 안정화된 다음 실행되도록 setTimeout으로 살짝 지연
+    const timer = setTimeout(() => {
       setCenter({
         lat: Number(selectedSenior.latitude),
         lng: Number(selectedSenior.longitude),
       });
       setZoomLevel((prev) => Math.max(prev, 6));
-    } else {
-      setCenter(mapCenter);
-    }
-  }, [selectedSenior?.senior_id, mapCenter.lat, mapCenter.lng]);
+    }, 100); // 0.1초 지연
+
+    return () => clearTimeout(timer);
+  } else {
+    setCenter(mapCenter);
+  }
+}, [selectedSenior, mapCenter]);
 
   const shouldShowInfoWindow =
     !isDashboardView &&
@@ -122,11 +124,10 @@ export default function RiskRankMap({
             const fontSize = getFontSize();
 
             let indexNumber = 0;
-            if (isDashboardView && senior.resolved_label === 'EMERGENCY') {
-              indexNumber =
-                emergencySeniors.findIndex(
-                  (s) => s.senior_id === senior.senior_id
-                ) + 1;
+            // `resolved_label` 대신 `currentLevel`을 기준으로 조건을 변경합니다.
+            if (isDashboardView && currentLevel === 'EMERGENCY') {
+              // seniors 배열 (현재 '긴급' 목록)에서 순번을 찾습니다.
+              indexNumber = seniors.findIndex(s => s.senior_id === senior.senior_id) + 1;
             }
 
             const markerKey = `${senior.latest_overall_result_id ?? senior.senior_id ?? 'unknown'}-${idx}`;
@@ -143,13 +144,13 @@ export default function RiskRankMap({
                   if (!isDashboardView) onMarkerClick(senior);
                 }}
               >
-                {indexNumber > 0 && (
+                {isDashboardView ? (
                   <div
                     style={{
                       width: `${circleSize}px`,
                       height: `${circleSize}px`,
                       borderRadius: '50%',
-                      backgroundColor: stateColors.EMERGENCY,
+                      backgroundColor: stateColors[currentLevel],
                       color: '#fff',
                       display: 'flex',
                       alignItems: 'center',
@@ -164,9 +165,9 @@ export default function RiskRankMap({
                       border: '1px solid #fff',
                     }}
                   >
-                    {indexNumber}
+                    {currentLevel === 'EMERGENCY' ? indexNumber : ''}
                   </div>
-                )}
+                ) : null}
               </MapMarker>
             );
           })}
@@ -177,7 +178,7 @@ export default function RiskRankMap({
               lat: Number(selectedSenior.latitude),
               lng: Number(selectedSenior.longitude),
             }}
-            yAnchor={1.5}
+            yAnchor={1.4}
             xAnchor={0.5}
             zIndex={101}
           >
@@ -193,13 +194,13 @@ export default function RiskRankMap({
                 padding: '4px 8px',
                 whiteSpace: 'pre-line',
                 wordBreak: 'keep-all',
-                minWidth: '400px',
+                minWidth: '500px',
                 maxWidth: '90vw',
                 cursor: selectedSenior.latest_overall_result_id ? 'pointer' : 'default',
               }}
             >
               <div className="font-bold text-base mb-1 text-blue-700">
-                {`${selectedSenior.name} (${selectedSenior.age}세)`}
+                {`${selectedSenior.name} (${selectedSenior.age}세 / ${selectedSenior.sex === 'MALE' ? '남' : '여'})`}
               </div>
               <div className="space-y-1.5 text-sm text-gray-800">
                 <div>
@@ -213,53 +214,54 @@ export default function RiskRankMap({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {selectedSenior.resolved_label ? (
-                    <>
-                      <span className="font-semibold">· 조치 여부 : </span>
-                      {selectedSenior.is_resolved === false ? (
-                        <span className="px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">
-                          확인 필요
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full">
-                          조치 완료
-                        </span>
-                      )}
+                  {(() => {
+                    // 1. riskColors 객체를 if-else문 바깥에서 한 번만 정의합니다.
+                    const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
+                      EMERGENCY: { text: 'text-red-600', bg: 'bg-red-500', border: 'border-red-200', label: '긴급' },
+                      CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-500', border: 'border-orange-200', label: '위험' },
+                      DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-500', border: 'border-yellow-200', label: '주의' },
+                      POSITIVE: { text: 'text-green-600', bg: 'bg-green-500', border: 'border-green-200', label: '안전' },
+                    };
 
-                      {(() => {
-                        const riskColors: Record<RiskLevel, { text: string; bg: string; border: string; label: string }> = {
-                          EMERGENCY: { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: '긴급' },
-                          CRITICAL: { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: '위험' },
-                          DANGER: { text: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-200', label: '주의' },
-                          POSITIVE: { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: '안전' },
-                        };
-                        const currentLabel = selectedSenior.resolved_label;
-                        const previousLabel = selectedSenior.pre_resolved_label ?? currentLabel;
-                        const currentColor = riskColors[currentLabel];
-                        const previousColor = riskColors[previousLabel];
+                    // 2. latest_overall_result_id 유무로 분기합니다.
+                    if (selectedSenior.latest_overall_result_id) {
+                      // --- 분석 결과가 있을 때 ---
+                      const currentLabel = selectedSenior.resolved_label ?? 'POSITIVE';
+                      const previousLabel = selectedSenior.pre_resolved_label ?? currentLabel;
+                      const currentColor = riskColors[currentLabel];
+                      const previousColor = riskColors[previousLabel];
 
-                        return (
-                          <>
-                            <span className="text-xs text-gray-500">|</span>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${previousColor.text} ${previousColor.border}`}>
-                              {previousColor.label}
-                            </span>
-                            <span className="text-sm text-gray-500">→</span>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${currentColor.text} ${currentColor.border}`}>
-                              {currentColor.label}
-                            </span>
-                          </>
-                        );
-                      })()}
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-semibold">· 현재 상태 : </span>
-                      <span className="px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full">
-                        안전
-                      </span>
-                    </>
-                  )}
+                      return (
+                        <>
+                          <span className="font-semibold">· 조치 여부 : </span>
+                          {selectedSenior.is_resolved === false ? (
+                            <span className="px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">확인 필요</span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full">조치 완료</span>
+                          )}
+                          
+                          {selectedSenior.resolved_label && (
+                            <>
+                              <span className="text-xs text-gray-500">|</span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${previousColor.border} ${previousColor.text}`}>{previousColor.label}</span>
+                              <span className="text-sm text-gray-500">→</span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${currentColor.border} ${currentColor.text}`}>{currentColor.label}</span>
+                            </>
+                          )}
+                        </>
+                      );
+                    } else {
+                      // --- 분석 결과가 없을 때 (신규 등록 등) ---
+                      return (
+                        <>
+                          <span className="font-semibold">· 현재 상태 : </span>
+                          <span className={`px-2 py-0.5 text-xs font-semibold text-white ${riskColors[currentLevel].bg} rounded-full`}>
+                            {riskColors[currentLevel].label}
+                          </span>
+                        </>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
             </div>

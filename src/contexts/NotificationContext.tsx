@@ -75,7 +75,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
             setUnreadCount(prev => prev + 1);
           }
 
-          if (newNotification.type === 'EMERGENCY_DETECTED') {
+          if (newNotification.type === 'EMERGENCY_DETECTED' || newNotification.message.includes('긴급')) {
             setToastNotifications(prev => [...prev, newNotification]);
           }
         } catch (e) {

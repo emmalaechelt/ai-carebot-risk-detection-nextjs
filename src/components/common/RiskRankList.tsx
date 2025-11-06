@@ -75,15 +75,17 @@ export default function RiskRankList({
         new Date(a.last_state_changed_at).getTime()
       );
     });
-  // --- ⬆️ 여기까지 수정 ---
 
   return (
     <div className="w-full h-full max-h-[600px] overflow-y-auto border rounded-lg p-3 bg-white">
       <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
         <h3 className={`text-lg font-bold ${riskColors[displayLevelColor].text}`}>
           {displayLevelLabel}
         </h3>
-        <div className="text-sm text-gray-600">{filteredSeniors.length}건</div>
+        <div className="text-sm text-gray-600 translate-y-[1px]">(최신순)</div>
+        </div>
+        <div className="text-sm text-gray-600 translate-y-[1px]">{filteredSeniors.length}건</div>
       </div>
 
       {filteredSeniors.length === 0 ? (
@@ -102,7 +104,7 @@ export default function RiskRankList({
               key={`senior-${senior.senior_id ?? 'unknown'}-${senior.latest_overall_result_id ?? idx}`}
               onClick={() => onSeniorSelect(senior)}
               className={
-                'cursor-pointer p-3 mb-3 rounded-lg border transition ' +
+                'cursor-pointer p-2 mb-2 rounded-lg border transition ' +
                 (isSelected
                   ? 'border-blue-300 bg-blue-50'
                   : `${color.border} ${color.bg} hover:brightness-95`)

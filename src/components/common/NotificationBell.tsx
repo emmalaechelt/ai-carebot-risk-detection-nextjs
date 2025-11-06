@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaBell, FaTrashAlt, FaCheckDouble } from 'react-icons/fa';
 import { useNotificationContext } from '@/contexts/NotificationContext';
-import type { Notification } from '@/types'; 
+import type { Notification } from '@/types';
 
 export default function NotificationBell() {
   const router = useRouter();
@@ -17,12 +17,10 @@ export default function NotificationBell() {
   const handleClick = async (notification: Notification) => {
     if (!notification.is_read) await markAsRead(notification.notification_id);
 
-    // ✅ [개선] router.push에 notification.link를 사용하여 더 유연하게 만듭니다.
-    // 이렇게 하면 서버에서 보내주는 link 경로에 따라 어디로든 이동시킬 수 있습니다.
+    // ✅ 서버에서 link가 내려오면 해당 링크로 이동
     if (notification.link) {
       router.push(notification.link);
     } else {
-      // 기존 로직은 fallback으로 유지
       switch (notification.type) {
         case 'ANALYSIS_COMPLETE':
           router.push(`/analysis/${notification.resource_id}`);
@@ -38,7 +36,7 @@ export default function NotificationBell() {
     setIsOpen(false);
   };
 
-  // 클릭 외부에서 닫기
+  // 클릭 외부 시 알림창 닫기
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -51,11 +49,16 @@ export default function NotificationBell() {
 
   return (
     <div className="relative inline-block" ref={containerRef}>
-      <button onClick={toggleOpen} className="relative bg-transparent border-none cursor-pointer p-2 text-gray-800 hover:text-blue-600 transition-colors">
+      <button
+        onClick={toggleOpen}
+        className="relative bg-transparent border-none cursor-pointer p-2 text-gray-800 hover:text-blue-600 transition-colors"
+      >
         <FaBell size={24} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-            {unreadCount > 9 ? '9+' : unreadCount}
+          <span
+            className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full"
+          >
+            {unreadCount}
           </span>
         )}
       </button>
@@ -66,12 +69,18 @@ export default function NotificationBell() {
             <h4 className="text-sm font-semibold text-gray-700">알림</h4>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
-                <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                >
                   <FaCheckDouble size={12} /> 모두 읽음
                 </button>
               )}
               {notifications.length > 0 && (
-                <button onClick={clearNotifications} className="text-xs text-red-400 hover:underline flex items-center gap-1 cursor-pointer">
+                <button
+                  onClick={clearNotifications}
+                  className="text-xs text-red-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
                   <FaTrashAlt size={12} /> 전체 삭제
                 </button>
               )}
@@ -85,13 +94,13 @@ export default function NotificationBell() {
                   key={n.notification_id}
                   onClick={() => handleClick(n)}
                   className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                    !n.is_read
-                      ? 'bg-blue-50 font-semibold'
-                      : 'bg-white'
+                    !n.is_read ? 'bg-blue-50 font-semibold' : 'bg-white'
                   }`}
                 >
                   <p className="text-gray-800 text-sm">{n.message}</p>
-                  <small className="text-gray-500 text-xs">{new Date(n.created_at).toLocaleString('ko-KR')}</small>
+                  <small className="text-gray-500 text-xs">
+                    {new Date(n.created_at).toLocaleString('ko-KR')}
+                  </small>
                 </li>
               ))}
             </ul>

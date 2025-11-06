@@ -7,16 +7,15 @@ import RiskRankMap from "@/components/common/RiskRankMap";
 import RiskRankList from "@/components/common/RiskRankList";
 import type { DashboardSenior, RiskLevel } from "@/types";
 import KakaoMapProvider from "@/contexts/KakaoMapContext";
-import { useDashboardData } from "@/hooks/useDashboardData"; // ✅ SWR 훅 임포트
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const DEFAULT_MAP_CENTER = { lat: 36.3504, lng: 127.3845 };
-const DEFAULT_MAP_LEVEL = 7;
-const ZOOM_ON_SELECT = 4;
+const DEFAULT_MAP_LEVEL = 8;
+const ZOOM_ON_SELECT = 5;
 
 function DashboardContent() {
   const router = useRouter();
   
-  // ✅ 수정됨: SWR 훅으로 데이터 로딩 로직을 모두 대체합니다.
   const { data, isLoading, isError } = useDashboardData();
 
   const [selectedLevel, setSelectedLevel] = useState<RiskLevel>("EMERGENCY");
@@ -24,7 +23,13 @@ function DashboardContent() {
   const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
   const [mapLevel, setMapLevel] = useState(DEFAULT_MAP_LEVEL);
 
-  // ✅ 수정됨: useMemo의 의존성을 SWR에서 온 `data`로 변경합니다.
+  useEffect(() => {
+  // 상태 변경 시: 선택된 시니어 초기화 + 지도도 기본 위치로 복귀
+  setSelectedSenior(null);
+  setMapCenter(DEFAULT_MAP_CENTER);
+  setMapLevel(DEFAULT_MAP_LEVEL);
+}, [selectedLevel]);
+
   const filteredSeniors = useMemo(() => {
     if (!data?.seniors_by_state) return [];
     const key = selectedLevel.toLowerCase() as keyof typeof data.seniors_by_state;
@@ -38,12 +43,12 @@ function DashboardContent() {
       setMapCenter({ lat: selectedSenior.latitude, lng: selectedSenior.longitude });
       setMapLevel(ZOOM_ON_SELECT);
     } else {
+      // selectedSenior가 null이 되면, 지도의 중앙과 줌 레벨을 기본값으로 되돌립니다.
       setMapCenter(DEFAULT_MAP_CENTER);
       setMapLevel(DEFAULT_MAP_LEVEL);
     }
   }, [selectedSenior]);
   
-  // ✅ 수정됨: 에러/로딩 상태를 SWR 훅의 상태로 변경합니다.
   if (isError) return <p className="text-center mt-10 text-red-600">대시보드 데이터를 불러오는 데 실패했습니다.</p>;
   if (isLoading) return <div>Loading...</div>;
   if (!data) return <p className="text-center mt-10 text-gray-600">표시할 데이터가 없습니다.</p>;
