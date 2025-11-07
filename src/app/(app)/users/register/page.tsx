@@ -9,6 +9,7 @@ import { Residence, SeniorSex } from "@/types";
 import { geocodeAddress } from "@/utils/geocode";
 import KakaoMapProvider from "@/contexts/KakaoMapContext";
 
+
 interface FormState {
   doll_id: string;
   name: string;

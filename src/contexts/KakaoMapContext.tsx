@@ -4,45 +4,54 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 
 interface KakaoMapContextValue {
   isKakaoLoaded: boolean;
+  isPostcodeLoaded: boolean;
 }
 
 const KakaoMapContext = createContext<KakaoMapContextValue>({
   isKakaoLoaded: false,
+  isPostcodeLoaded: false,
 });
 
 export default function KakaoMapProvider({ children }: { children: ReactNode }) {
   const [isKakaoLoaded, setIsKakaoLoaded] = useState(false);
+  const [isPostcodeLoaded, setIsPostcodeLoaded] = useState(false);
 
   useEffect(() => {
-    if (window.kakao?.maps) {
+    // ✅ Kakao 지도 SDK 로드
+    if (!window.kakao?.maps) {
+      const kakaoScript = document.createElement("script");
+      kakaoScript.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&autoload=false&libraries=services`;
+      kakaoScript.async = true;
+      kakaoScript.onload = () => {
+        window.kakao.maps.load(() => setIsKakaoLoaded(true));
+      };
+      document.head.appendChild(kakaoScript);
+    } else {
       setIsKakaoLoaded(true);
-      return;
     }
 
-    const script = document.createElement("script");
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY}&autoload=false&libraries=services`;
-    script.async = true;
-    script.onload = () => {
-      window.kakao.maps.load(() => {
-        setIsKakaoLoaded(true);
-      });
-    };
-    document.head.appendChild(script);
+    // ✅ Daum 주소 검색 스크립트 로드
+    if (!window.daum?.Postcode) {
+      const daumScript = document.createElement("script");
+      daumScript.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+      daumScript.async = true;
+      daumScript.onload = () => setIsPostcodeLoaded(true);
+      document.head.appendChild(daumScript);
+    } else {
+      setIsPostcodeLoaded(true);
+    }
   }, []);
 
-  // --- ⬇️ 핵심 수정 부분 ---
-  // isKakaoLoaded가 false이면, 자식 컴포넌트(children)를 렌더링하지 않고 로딩 화면을 보여줍니다.
-  // 이렇게 하면 자식 컴포넌트에서는 더 이상 로딩 상태를 신경 쓸 필요가 없습니다.
-  if (!isKakaoLoaded) {
+  if (!isKakaoLoaded || !isPostcodeLoaded) {
     return (
       <div className="w-full h-full flex items-center justify-center text-gray-500">
-        지도 로딩 중...
+        지도 및 주소 검색 로딩 중...
       </div>
     );
   }
 
   return (
-    <KakaoMapContext.Provider value={{ isKakaoLoaded }}>
+    <KakaoMapContext.Provider value={{ isKakaoLoaded, isPostcodeLoaded }}>
       {children}
     </KakaoMapContext.Provider>
   );

@@ -23,12 +23,14 @@ declare global {
   }
 }
 
+// 날짜 유효성 검사
 const isValidDate = (y: number, m: number, d: number): boolean => {
   const date = new Date(y, m - 1, d);
   const today = new Date();
   return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d && date <= today;
 };
 
+// 나이 계산
 const calculateAge = (birthDate: string): number | null => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
   const birth = new Date(birthDate);
@@ -39,6 +41,7 @@ const calculateAge = (birthDate: string): number | null => {
   return age;
 };
 
+// 선택 옵션
 const relationshipOptions = ["자녀", "배우자", "부모", "형제자매", "친척", "기타"];
 const residenceOptions: { key: string; value: string }[] = [
   { key: "SINGLE_FAMILY_HOME", value: "단독주택" },
@@ -77,6 +80,8 @@ export default function UserEditPage() {
     guardian_phone: "",
     guardian_note: "",
     note: "",
+    latitude: 0,
+    longitude: 0,
   });
 
   const [birth, setBirth] = useState({ year: "", month: "", day: "" });
@@ -86,7 +91,7 @@ export default function UserEditPage() {
   const addressDetailRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // Daum Postcode 스크립트 로드
+  // --- Daum Postcode ---
   useEffect(() => {
     const scriptUrl = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
     if (document.querySelector(`script[src="${scriptUrl}"]`)) {
@@ -100,16 +105,14 @@ export default function UserEditPage() {
     document.head.appendChild(script);
   }, []);
 
-  // 기존 이용자 데이터 불러오기
+  // --- 기존 이용자 정보 불러오기 ---
   useEffect(() => {
     if (!seniorId) return;
     const fetchSenior = async () => {
       try {
         const res = await api.get(`/seniors/${seniorId}`);
         const data = res.data;
-
-        const mainAddress = data.address;
-        const detailAddress = data.address_detail || "";
+        console.log("불러온 데이터:", data);
 
         setForm({
           doll_id: data.doll_id || "",
@@ -118,8 +121,8 @@ export default function UserEditPage() {
           sex: data.sex || "",
           phone: data.phone || "",
           zip_code: "",
-          address: mainAddress,
-          address_detail: detailAddress,
+          address: data.address || "",
+          address_detail: data.address_detail || "",
           gu: data.gu || "",
           dong: data.dong || "",
           residence: data.residence || "",
@@ -132,6 +135,8 @@ export default function UserEditPage() {
           guardian_phone: data.guardian_phone || "",
           guardian_note: data.guardian_note || "",
           note: data.note || "",
+          latitude: data.latitude || 0,
+          longitude: data.longitude || 0,
         });
 
         if (data.birth_date) {
@@ -139,38 +144,34 @@ export default function UserEditPage() {
           setBirth({ year: y, month: m, day: d });
           setAge(calculateAge(data.birth_date));
         }
-        if (data.photo_url) {
-          setPhotoPreview("http://localhost:8080" + data.photo_url);
-        }
+        if (data.photo_url) setPhotoPreview("http://localhost:8080" + data.photo_url);
       } catch {
-        alert("이용자 정보를 불러오는 데 실패했습니다.");
+        alert("이용자 정보를 불러오지 못했습니다.");
         router.push("/users/view");
       }
     };
     fetchSenior();
   }, [seniorId, router]);
 
-  // 생년월일 변경 시 나이 계산
+  // 생년월일 입력 처리
   useEffect(() => {
     const { year, month, day } = birth;
     if (year.length === 4 && month && day) {
-      const yearNum = parseInt(year, 10),
-        monthNum = parseInt(month, 10),
-        dayNum = parseInt(day, 10);
-      if (isValidDate(yearNum, monthNum, dayNum)) {
-        const fullDate = `${yearNum}-${String(monthNum).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-        setForm((prev) => ({ ...prev, birth_date: fullDate }));
-        setAge(calculateAge(fullDate));
+      const y = parseInt(year, 10),
+        m = parseInt(month, 10),
+        d = parseInt(day, 10);
+      if (isValidDate(y, m, d)) {
+        const full = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        setForm((prev) => ({ ...prev, birth_date: full }));
+        setAge(calculateAge(full));
       } else {
         setForm((prev) => ({ ...prev, birth_date: "" }));
         setAge(null);
       }
-    } else {
-      setForm((prev) => ({ ...prev, birth_date: "" }));
-      setAge(null);
     }
   }, [birth]);
 
+  // --- 입력 핸들러 ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -180,31 +181,26 @@ export default function UserEditPage() {
   const handleBirthBlur = (e: FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (!value) return;
-    const numValue = parseInt(value, 10);
-    let newValue = value;
-    if (name === "month") newValue = String(Math.max(1, Math.min(12, numValue))).padStart(2, "0");
-    if (name === "day") newValue = String(Math.max(1, Math.min(31, numValue))).padStart(2, "0");
-    if (newValue !== value) setBirth((prev) => ({ ...prev, [name]: newValue }));
+    const n = parseInt(value, 10);
+    let nv = value;
+    if (name === "month") nv = String(Math.max(1, Math.min(12, n))).padStart(2, "0");
+    if (name === "day") nv = String(Math.max(1, Math.min(31, n))).padStart(2, "0");
+    if (nv !== value) setBirth((p) => ({ ...p, [name]: nv }));
   };
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const formatted = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, "$1-$2-$3").slice(0, 13);
-    setForm((prev) => ({ ...prev, [name]: formatted }));
+    const f = value.replace(/\D/g, "").replace(/(\d{3})(\d{1,4})?(\d{1,4})?/, "$1-$2-$3").slice(0, 13);
+    setForm((p) => ({ ...p, [name]: f }));
   };
 
-  // --- [수정됨] 안전한 우편번호 검색 ---
+  // --- 주소 검색 ---
   const handleZipSearch = () => {
     if (!isScriptLoaded || !window.daum?.Postcode) {
-      alert("주소 검색 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+      alert("주소 검색 스크립트가 아직 로드되지 않았습니다.");
       return;
     }
-
-    const Postcode = window.daum.Postcode as unknown as {
-      new (options: { oncomplete: (data: DaumPostcodeData) => void }): { open: () => void };
-    };
-
-    const postcode = new Postcode({
+    const postcode = new window.daum.Postcode({
       oncomplete: (data: DaumPostcodeData) => {
         setForm((prev) => ({
           ...prev,
@@ -216,7 +212,6 @@ export default function UserEditPage() {
         addressDetailRef.current?.focus();
       },
     });
-
     postcode.open();
   };
 
@@ -229,31 +224,12 @@ export default function UserEditPage() {
     }
   };
 
+  // --- 저장 (AbortError 방지 포함) ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting || !seniorId) return;
 
-    const requiredFields = [
-      form.doll_id,
-      form.name,
-      form.birth_date,
-      form.sex,
-      form.phone,
-      form.address,
-      form.gu,
-      form.dong,
-      form.residence,
-      form.guardian_name,
-      form.guardian_phone,
-      form.relationship,
-    ];
-    if (requiredFields.some((f) => !f)) {
-      alert("필수 항목(*)을 모두 입력해주세요. (주소는 반드시 '우편번호 검색'을 이용해야 합니다)");
-      return;
-    }
-
     setIsSubmitting(true);
-
     try {
       const seniorPayload = {
         doll_id: form.doll_id,
@@ -274,6 +250,8 @@ export default function UserEditPage() {
         diseases: form.diseases,
         medications: form.medications,
         disease_note: form.disease_note,
+        latitude: form.latitude,
+        longitude: form.longitude,
       };
 
       const formData = new FormData();
@@ -285,21 +263,23 @@ export default function UserEditPage() {
       });
 
       alert("이용자 정보가 수정되었습니다.");
-      router.push(`/users/view/${seniorId}`);
+
+      // ✅ AbortError 방지용 지연 후 페이지 이동
+      setTimeout(() => {
+        router.push(`/users/view/${seniorId}`);
+      }, 150);
     } catch (err: unknown) {
+      console.error("수정 요청 중 오류:", err);
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        const serverMsg = err.response?.data?.error;
-        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n(입력값 확인 필요)\n${serverMsg || ""}`);
+        const msg = err.response?.data?.error;
+        if (status === 400) alert(`요청 형식이 올바르지 않습니다.\n${msg || ""}`);
         else if (status === 401) alert("인증이 만료되었습니다. 다시 로그인 해주세요.");
-        else if (status === 403) alert("수정 권한이 없습니다. 관리자에게 문의하세요.");
+        else if (status === 403) alert("수정 권한이 없습니다.");
         else if (status === 404) alert("이용자 정보를 찾을 수 없습니다.");
-        else if (status === 409) alert("이미 등록된 인형 또는 중복된 데이터가 존재합니다.");
-        else if (status === 500) alert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        else alert(serverMsg || "예상치 못한 오류가 발생했습니다.");
-      } else {
-        alert("알 수 없는 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
-      }
+        else if (status === 409) alert("중복된 데이터가 존재합니다.");
+        else alert(msg || "서버 오류가 발생했습니다.");
+      } else alert("알 수 없는 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }

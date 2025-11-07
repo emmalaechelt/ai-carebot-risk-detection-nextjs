@@ -83,9 +83,9 @@ export default function RiskRankList({
         <h3 className={`text-lg font-bold ${riskColors[displayLevelColor].text}`}>
           {displayLevelLabel}
         </h3>
-        <div className="text-sm text-gray-600 translate-y-[1px]">(최신순)</div>
+        <div className="text-sm text-gray-500 translate-y-[1px]">(최신순)</div>
         </div>
-        <div className="text-sm text-gray-600 translate-y-[1px]">{filteredSeniors.length}건</div>
+        <div className="text-sm text-gray-500 translate-y-[1px]">{filteredSeniors.length}건</div>
       </div>
 
       {filteredSeniors.length === 0 ? (

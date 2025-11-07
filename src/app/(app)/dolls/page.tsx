@@ -190,7 +190,7 @@ export default function DollsPage() {
                 table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50 border-b border-gray-200">
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-3 py-1.5 text-gray-700">
+                      <td key={cell.id} className="px-3 py-1 text-gray-700">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}

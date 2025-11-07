@@ -38,7 +38,7 @@ function DashboardContent() {
   }, [data, selectedLevel]);
 
   useEffect(() => {
-    if (selectedSenior?.latitude && selectedSenior?.longitude) {
+    if (selectedSenior?.latitude != null && selectedSenior?.longitude != null) {
       setMapCenter({ lat: selectedSenior.latitude, lng: selectedSenior.longitude });
       setMapLevel(ZOOM_ON_SELECT);
     } else {

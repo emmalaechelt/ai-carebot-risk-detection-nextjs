@@ -443,7 +443,7 @@ export default function UserDetailPage() {
 
           {/* ----------------- 건강상태 ----------------- */}
           <section>
-             <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-2">
               <div className="w-1 h-5 bg-blue-600 rounded"></div>
               <h2 className={sectionTitleClass}>건강상태</h2></div>
             <table className={tableClass}>
@@ -504,7 +504,10 @@ export default function UserDetailPage() {
           <section>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-1 h-5 bg-blue-600 rounded"></div>
-              <h2 className={sectionTitleClass}>최근 분석 목록 (최대 5개까지)</h2></div>
+              <h2 className={sectionTitleClass}>
+                최근 분석 목록
+                <span className="text-base font-normal text-gray-500 ml-2">(최대 5개까지)</span>
+              </h2></div>
             {analyses.length > 0 ? (
               <table className={tableClass}>
                 <thead className="bg-gray-50">
