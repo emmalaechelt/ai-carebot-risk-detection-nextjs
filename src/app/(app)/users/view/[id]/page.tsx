@@ -292,7 +292,7 @@ export default function UserDetailPage() {
   };
 
   // --- 스타일 클래스 정의 ---
-  const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
+  const sectionTitleClass = "text-lg font-semibold text-gray-800";
   const tableBorderClass = "border-gray-400";
   const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
   const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
@@ -311,7 +311,9 @@ export default function UserDetailPage() {
 
           {/* ----------------- 기본정보 ----------------- */}
           <section>
-            <h2 className={sectionTitleClass}>■ 기본정보</h2>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>기본정보</h2></div>
             <table className={tableClass}>
               <colgroup><col className="w-34" /><col className="w-28" /><col className="w-45" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
@@ -441,7 +443,9 @@ export default function UserDetailPage() {
 
           {/* ----------------- 건강상태 ----------------- */}
           <section>
-            <h2 className={sectionTitleClass}>■ 건강상태</h2>
+             <div className="flex items-center gap-3 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>건강상태</h2></div>
             <table className={tableClass}>
               <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
@@ -461,7 +465,9 @@ export default function UserDetailPage() {
 
           {/* ----------------- 보호자 ----------------- */}
           <section>
-            <h2 className={sectionTitleClass}>■ 보호자</h2>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>보호자</h2></div>
             <table className={tableClass}>
               <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
               <tbody>
@@ -488,13 +494,17 @@ export default function UserDetailPage() {
 
           {/* ----------------- 참고사항 ----------------- */}
           <section>
-            <h2 className={sectionTitleClass}>■ 이외 참고사항</h2>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>이외 참고사항</h2></div>
             <textarea name="note" value={form.note} onChange={handleChange} rows={3} className={`${inputClass} w-full`} readOnly={!isEditing} />
           </section>
 
           {/* ----------------- 최근 분석 ----------------- */}
           <section>
-            <h2 className={sectionTitleClass}>■ 최근 분석 목록 (최대 5개까지)</h2>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>최근 분석 목록 (최대 5개까지)</h2></div>
             {analyses.length > 0 ? (
               <table className={tableClass}>
                 <thead className="bg-gray-50">

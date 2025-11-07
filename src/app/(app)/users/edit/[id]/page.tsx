@@ -306,12 +306,12 @@ export default function UserEditPage() {
   };
 
   // --- UI 클래스 ---
-  const sectionTitleClass = "text-lg font-semibold text-gray-800 mb-1.5";
-  const tableBorderClass = "border-gray-400";
+   const sectionTitleClass = "text-lg font-semibold text-gray-800";
+  const tableBorderClass = "border-gray-200";
   const tableClass = `w-full border-collapse text-sm border ${tableBorderClass}`;
   const thClass = `border ${tableBorderClass} bg-gray-50 font-medium p-2 text-center align-middle whitespace-nowrap`;
   const tdClass = `border ${tableBorderClass} p-2 align-middle`;
-  const inputClass = "border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
+  const inputClass = "border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm";
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
 
   return (
@@ -319,7 +319,9 @@ export default function UserEditPage() {
       <h1 className="text-2xl font-bold mb-4 text-center">이용자 정보 수정</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <section>
-          <h2 className={sectionTitleClass}>■ 기본정보</h2>
+           <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>기본정보</h2></div>
           <table className={tableClass}>
             <colgroup>
               <col className="w-34" /><col className="w-28" /><col className="w-45" /><col className="w-35" /><col className="w-auto" />
@@ -404,7 +406,9 @@ export default function UserEditPage() {
         </section>
 
         <section>
-          <h2 className={sectionTitleClass}>■ 건강상태</h2>
+           <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded"></div>
+              <h2 className={sectionTitleClass}>건강상태</h2></div>
           <table className={tableClass}>
             <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
             <tbody>
@@ -423,7 +427,9 @@ export default function UserEditPage() {
         </section>
 
         <section>
-          <h2 className={sectionTitleClass}>■ 보호자</h2>
+          <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded "></div>
+              <h2 className={sectionTitleClass}>보호자</h2></div>
           <table className={tableClass}>
             <colgroup><col className="w-34" /><col className="w-73" /><col className="w-35" /><col className="w-auto" /></colgroup>
             <tbody>
@@ -449,7 +455,9 @@ export default function UserEditPage() {
         </section>
 
         <section>
-          <h2 className={sectionTitleClass}>■ 이외 참고사항</h2>
+          <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-5 bg-blue-600 rounded "></div>
+              <h2 className={sectionTitleClass}>이외 참고사항</h2></div>
           <table className={tableClass}>
             <colgroup><col className="w-34" /><col className="w-auto" /></colgroup>
             <tbody>
