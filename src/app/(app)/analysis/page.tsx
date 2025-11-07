@@ -141,23 +141,29 @@ export default function AnalysisPage() {
     { accessorKey: "gu", header: () => <div className="text-center">자치구</div> },
     { accessorKey: "dong", header: () => <div className="text-center">법정동</div> },
     { accessorKey: "label", header: () => <div className="text-center">분석 결과</div>, cell: (info) => labelMap[info.getValue() as string] || info.getValue() },
+
+    // ✅ 요약
     {
-      accessorKey: "summary", header: "요약", cell: ({ row }) => (
+      accessorKey: "summary",
+      header: "요약",
+      cell: ({ row }) => (
         <button
           onClick={() => {
             const resultId = row.original.overall_result_id;
             const seniorId = row.original.senior_id;
             router.push(`/analysis/${resultId}?senior_id=${seniorId}`);
           }}
-          className="text-blue-600 hover:underline text-left cursor-pointer"
+          className="text-blue-600 hover:underline text-left cursor-pointer w-full max-w-[400px] truncate"
         >
           {row.original.summary}
         </button>
-      )
+      ),
     },
-    { 
-      accessorKey: "timestamp", 
-      header: "분석 일시", 
+
+    // ✅ 분석 일시 — 항상 오른쪽 끝 + 고정 폭 + 우측 정렬
+    {
+      accessorKey: "timestamp",
+      header: () => <div className="text-center whitespace-nowrap">분석 일시</div>,
       cell: (info) => {
         const date = new Date(info.getValue() as string);
         const year = date.getFullYear();
@@ -168,7 +174,11 @@ export default function AnalysisPage() {
         const hours = String(hoursRaw % 12 || 12).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${year}. ${month}. ${day}. ${ampm} ${hours}:${minutes}:${seconds}`;
+        return (
+          <div className="text-right whitespace-nowrap min-w-[150px]">
+            {`${year}. ${month}. ${day}. ${ampm} ${hours}:${minutes}:${seconds}`}
+          </div>
+        );
       }
     },
   ], [router]);
@@ -236,7 +246,7 @@ export default function AnalysisPage() {
             <label className="w-24 shrink-0 font-semibold text-gray-700 text-right pr-3">연령대</label>
             <select name="age_group" value={searchParams.age_group} onChange={handleInputChange} className="w-full border border-gray-200 rounded px-2 h-8 bg-white outline-none transition">
               <option value="">전체</option>
-              {[60,70,80,90,100].map(a => <option key={a} value={a}>{a===100?'100세 이상':`${a}대`}</option>)}
+              {[60, 70, 80, 90, 100].map(a => <option key={a} value={a}>{a === 100 ? '100세 이상' : `${a}대`}</option>)}
             </select>
           </div>
           <div className="flex items-center">
@@ -287,14 +297,25 @@ export default function AnalysisPage() {
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
-                    // ✅ [수정] th 패딩(py-1.5)과 border 스타일 적용
-                    <th key={header.id} className="px-2 py-1.5 font-medium border-b border-gray-200">
+                    <th
+                      key={header.id}
+                      style={
+                        header.column.id === "timestamp"
+                          ? { width: "200px", textAlign: "center" }
+                          : {}
+                      }
+                      className={`px-2 py-1.5 font-medium border-b border-gray-200 ${header.column.id === "timestamp"
+                          ? "text-center align-middle"
+                          : "text-center align-middle"}
+                      `}
+                    >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
                 </tr>
               ))}
             </thead>
+
             <tbody>
               {loading ? (
                 <tr><td colSpan={columns.length} className="text-center py-10">데이터를 불러오는 중입니다...</td></tr>
@@ -308,14 +329,16 @@ export default function AnalysisPage() {
                       // ✅ [수정] td 패딩(py-1.5) 적용
                       <td
                         key={cell.id}
-                        className={`px-2 py-1.5 align-middle text-gray-700 ${
-                          cell.column.id === 'summary' || cell.column.id === 'timestamp'
-                            ? 'text-left'
-                            : 'text-center'
-                        }`}
+                        className={`px-2 py-1.5 align-middle text-gray-700 ${cell.column.id === "timestamp"
+                          ? "text-right pr-4"
+                          : cell.column.id === "summary"
+                            ? "text-left"
+                            : "text-center"
+                          }`}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
+
                     ))}
                   </tr>
                 ))
