@@ -20,7 +20,7 @@ const NotificationContext = createContext<NotificationContextProps | undefined>(
 
 export const useNotificationContext = () => {
   const context = useContext(NotificationContext);
-  if (!context) throw new Error('useNotificationContext must be used within NotificationProvider');
+  if (!context) throw new Error('useNotificationContext must be used within a NotificationProvider');
   return context;
 };
 
@@ -46,7 +46,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       },
       onopen: async (res) => {
         if (res.ok) {
-          console.log("SSE connection established.");
+          console.log("✅ SSE 연결이 성공적으로 수립되었습니다.");
           try {
             const response = await api.get<Notification[]>('/notifications');
             setNotifications(response.data);
@@ -56,60 +56,56 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           }
           return;
         }
-        if (res.status === 401 || res.status === 403) {
-          console.error('SSE 인증 실패, 연결을 중단합니다.');
-          controller.abort();
-        }
+        console.error('❌ SSE 연결에 실패했습니다. 상태 코드:', res.status);
+        controller.abort();
       },
       onmessage: (event) => {
-        // Keep-alive 메시지 등 빈 데이터는 무시
-        if (!event.data) return;
+        if (typeof event.data !== 'string' || !event.data.startsWith('{')) {
+          console.log("❕ JSON 형식이 아닌 메시지 수신 (무시함):", event.data);
+          return;
+        }
 
         try {
           const newNotification: Notification = JSON.parse(event.data);
+          console.log("📄 파싱된 알림 객체:", newNotification);
           
-          // ✨ 디버깅용 로그 추가
-          console.log('새 알림 수신:', newNotification);
-
           setNotifications(prev => [newNotification, ...prev]);
-
           if (!newNotification.is_read) {
             setUnreadCount(prev => prev + 1);
           }
           
-          const message = newNotification.message || '';
-          const type = newNotification.type || '';
+          // ✅ [핵심 수정] 긴급 알림을 판단하는 로직을 더 유연하고 견고하게 변경합니다.
+          const messageUpperCase = newNotification.message.toUpperCase();
+          const isEmergency = 
+            newNotification.type === 'EMERGENCY_DETECTED' ||
+            (newNotification.type === 'ANALYSIS_COMPLETE' && messageUpperCase.includes('EMERGENCY')) ||
+            (newNotification.type === 'ANALYSIS_COMPLETE' && messageUpperCase.includes('긴급'));
 
-          // 긴급/응급 토스트 조건 확인
-          const isEmergency = type.toUpperCase().includes('EMERGENCY') ||
-                              message.includes('긴급') ||
-                              message.includes('응급');
-          
-          // ✨ 디버깅용 로그 추가
-          console.log(`긴급 알림 여부: ${isEmergency}`);
+          console.log(`❔ 긴급 알림 판별 시도: type='${newNotification.type}', message='${newNotification.message}', isEmergency=${isEmergency}`);
 
           if (isEmergency) {
-            setToastNotifications(prev => [...prev, newNotification]);
+            console.log("🚨 긴급 알림으로 인식됨! 토스트 상태를 업데이트합니다.", newNotification);
+            setToastNotifications(prev => 
+              prev.some(n => n.notification_id === newNotification.notification_id)
+                ? prev
+                : [...prev, newNotification]
+            );
           }
         } catch (e) {
-          console.error('SSE 메시지 파싱 실패:', e);
+          console.error('❌ SSE 메시지 파싱 실패:', e, '원본 데이터:', event.data);
         }
       },
       onerror: (err) => {
-        console.error("SSE Error:", err);
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        throw err;
+        console.error("❌ SSE onerror: 에러 발생", err);
       },
     });
 
     return () => {
       controller.abort();
-      console.log("SSE connection closed.");
+      console.log("SSE 연결이 종료되었습니다.");
     };
   }, [isLoading, isAuthenticated]);
-
+  
   const markAsRead = async (notificationId: number) => {
     const target = notifications.find(n => n.notification_id === notificationId);
     if (!target || target.is_read) return;
@@ -144,7 +140,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       console.error("전체 알림 삭제 실패:", error);
     }
   };
-
+  
   const clearToast = (notificationId: number) => {
     setToastNotifications(prev => prev.filter(n => n.notification_id !== notificationId));
   };
