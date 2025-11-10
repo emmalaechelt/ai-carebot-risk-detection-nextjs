@@ -174,8 +174,8 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             onClick={onClose}
             disabled={isUploading}
             className={`px-4 py-2 rounded-lg text-base ${isUploading
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-gray-300 text-black hover:bg-gray-400"
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-gray-300 text-black hover:bg-gray-400"
               }`}
           >
             취소
@@ -186,8 +186,8 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             onClick={handleSubmit}
             disabled={isUploading || !file}
             className={`px-4 py-2 rounded-lg text-base flex items-center justify-center gap-2 ${isUploading
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-blue-500 text-white hover:bg-blue-600"
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
               }`}
           >
             {isUploading ? (
@@ -206,9 +206,9 @@ export default function CsvUploadModal({ onClose }: CsvUploadModalProps) {
             )}
           </button>
         </div>
-        
+
         {isUploading && (
-          <div className="absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-[9999]">
+          <div className="absolute inset-0 bg-white bg-opacity-80 rounded-xl flex flex-col items-center justify-center z-[9999]">
             <Image
               src="/loading.gif"
               alt="분석 중..."

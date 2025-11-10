@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import api from "@/lib/api";
 import { Residence, SeniorSex } from "@/types";
+import { geocodeAddress } from "@/utils/geocode";
+import KakaoMapProvider from "@/contexts/KakaoMapContext";
 import axios from "axios";
 
 // --- 타입 정의 ---
@@ -22,6 +24,27 @@ declare global {
     };
   }
 }
+
+const mapStateToKorean = (state: string) => {
+  const normalized = state?.toString().toUpperCase().trim();
+
+  switch (normalized) {
+    case "SAFE":
+    case "안전":
+      return { text: "안전", color: "text-green-600 font-semibold" };
+    case "CAUTION":
+    case "주의":
+      return { text: "주의", color: "text-yellow-500 font-semibold" };
+    case "DANGER":
+    case "위험":
+      return { text: "위험", color: "text-orange-500 font-semibold" };
+    case "EMERGENCY":
+    case "긴급":
+      return { text: "긴급", color: "text-red-600 font-semibold" };
+    default:
+      return { text: "안전", color: "text-green-600 font-semibold" };
+  }
+};
 
 // 날짜 유효성 검사
 const isValidDate = (y: number, m: number, d: number): boolean => {
@@ -71,7 +94,7 @@ export default function UserEditPage() {
     gu: "",
     dong: "",
     residence: "" as Residence | "",
-    status: "정상",
+    status: "안전", // ✅ 기본값 한글로
     diseases: "",
     medications: "",
     disease_note: "",
@@ -114,6 +137,8 @@ export default function UserEditPage() {
         const data = res.data;
         console.log("불러온 데이터:", data);
 
+        const statusInfo = mapStateToKorean(data.state || "SAFE"); // ✅ 한글 변환
+
         setForm({
           doll_id: data.doll_id || "",
           name: data.name || "",
@@ -126,7 +151,7 @@ export default function UserEditPage() {
           gu: data.gu || "",
           dong: data.dong || "",
           residence: data.residence || "",
-          status: data.state || "정상",
+          status: statusInfo.text, // ✅ 한글 상태 적용
           diseases: data.diseases || "",
           medications: data.medications || "",
           disease_note: data.disease_note || "",
@@ -201,7 +226,7 @@ export default function UserEditPage() {
       return;
     }
     const postcode = new window.daum.Postcode({
-      oncomplete: (data: DaumPostcodeData) => {
+      oncomplete: async (data: DaumPostcodeData) => {
         setForm((prev) => ({
           ...prev,
           zip_code: data.zonecode || "",
@@ -210,6 +235,9 @@ export default function UserEditPage() {
           dong: data.bname || "",
         }));
         addressDetailRef.current?.focus();
+
+        const coords = await geocodeAddress(data.roadAddress);
+        if (coords) setForm((prev) => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
       },
     });
     postcode.open();
@@ -224,7 +252,7 @@ export default function UserEditPage() {
     }
   };
 
-  // --- 저장 (AbortError 방지 포함) ---
+  // --- 저장 ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting || !seniorId) return;
@@ -264,7 +292,6 @@ export default function UserEditPage() {
 
       alert("이용자 정보가 수정되었습니다.");
 
-      // ✅ AbortError 방지용 지연 후 페이지 이동
       setTimeout(() => {
         router.push(`/users/view/${seniorId}`);
       }, 150);
@@ -295,6 +322,7 @@ export default function UserEditPage() {
   const requiredLabel = <span className="text-red-500 ml-1">*</span>;
 
   return (
+    <KakaoMapProvider>
     <div className="p-5 bg-white rounded-lg shadow-md max-w-5xl mx-auto text-black">
       <h1 className="text-2xl font-bold mb-4 text-center">이용자 정보 수정</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -459,5 +487,6 @@ export default function UserEditPage() {
         </div>
       </form>
     </div>
+    </KakaoMapProvider>
   );
 }
